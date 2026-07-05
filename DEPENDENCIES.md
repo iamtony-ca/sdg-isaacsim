@@ -71,3 +71,33 @@ git clone <this-repo> && cd sdg_ws
 ```
 
 시드(`run.seed`)와 `config_snapshot.yaml`(출력 폴더에 자동 저장)로 재현성을 보장한다.
+
+## 5. 권한 문제 (Isaac 을 root 로 실행했을 때) — `tools/fix_perms.sh`
+
+이 컨테이너의 정상 유저는 **`isaac-sim`**(uid 1234)이고 **`sudo` 가 없다.** 누군가(예: 자동화 에이전트)
+Isaac Sim 을 **root 로 실행**하면 공유 캐시에 root 소유 파일이 남아 isaac-sim 이 못 쓰게 되고, 이후
+`~/runapp.sh` / `~/runheadless.sh` 가 제대로 안 뜬다. 오염되는 곳:
+`/isaac-sim/kit/{cache,logs,data}`, `/isaac-sim/.nv`, `/isaac-sim/.cache`, `/isaac-sim/.nvidia-omniverse`,
+`/isaac-sim/exts/omni.pip.{cloud,compute}`, 그리고 이 워크스페이스.
+
+**isaac-sim 계정에서는 직접 못 고친다(sudo 없음).** 반드시 **root 컨텍스트**에서 복구:
+
+```bash
+# 감지만 (아무 계정이나 가능)
+sh tools/fix_perms.sh --check
+
+# 복구 — 컨테이너 안 root 쉘에서
+sh tools/fix_perms.sh
+
+# 복구 — 호스트에서 (컨테이너 이름이 예: tony)
+docker exec -u root tony sh /isaac-sim/volume/sdg_ws/tools/fix_perms.sh
+```
+
+`tools/fix_perms.sh` 는 위 디렉토리 + 워크스페이스의 **root 소유 파일만** isaac-sim 소유로 되돌린다
+(idempotent, `SDG_RUNTIME_USER`/`ISAAC_SIM_ROOT` 로 오버라이드 가능).
+
+**예방(권장):** 애초에 root 로 Isaac 을 돌리지 말 것. root 쉘에서 실행해야 하면 isaac-sim 으로 강등:
+```bash
+runuser -u isaac-sim -- /isaac-sim/python.sh sdg/run_sdg.py --config config/example.yaml --headless
+```
+이러면 캐시가 isaac-sim 소유로 유지되어 오염이 안 생긴다.
