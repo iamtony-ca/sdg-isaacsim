@@ -1,0 +1,29 @@
+CLAUDE.md
+.claude
+
+# generated data
+datasets/
+# large binary assets (keep per-obj folder structure via .gitkeep; track pointers/metadata only)
+assets/obj/**/*.usd
+assets/obj/**/*.usdc
+assets/obj/**/*.usda
+assets/obj/**/*.usdz
+assets/obj/**/*.obj
+assets/obj/**/*.stl
+assets/obj/**/*.ply
+assets/obj/**/*.fbx
+assets/obj/**/*.png
+assets/obj/**/*.jpg
+# python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
+# model checkpoints / weights
+*.pt
+*.pth
+*.onnx
+# editor
+.vscode/
+.idea/

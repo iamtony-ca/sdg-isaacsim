@@ -1,0 +1,43 @@
+# Smoke config — S1 render verification WITHOUT any object asset.
+# Renders a ground plane + dome light and captures rgb/depth/semantic for a few frames.
+# Proves the app -> scene -> sensor -> annotator -> writer path end to end.
+# (The full example.yaml adds an object from assets/obj/<obj_id>/, which you must supply.)
+
+run:
+  name: smoke
+  num_frames: 3
+  seed: 42
+  headless: true
+  output_dir: datasets/smoke
+
+scene:
+  builder: default
+  background: ground_plane
+  ground_plane: true
+
+objects: []              # no object asset needed for the smoke test
+
+randomizers:
+  - {type: lighting, intensity: [800, 3000], kinds: [dome]}
+  - {type: camera,   mode: look_at, distance: [2.0, 4.0], elevation_deg: [20, 70], azimuth_deg: [-180, 180]}
+
+sensors:
+  - name: cam0
+    type: ideal
+    resolution: [640, 480]
+    intrinsics: {hfov_deg: 69}
+
+annotators:
+  rgb: true
+  depth: true
+  semantic_segmentation: true
+  instance_segmentation: false
+  bbox_2d: false
+  bbox_3d: false
+  normals: false
+  keypoints: []
+  pose_6d: false
+
+writer:
+  format: generic
+  depth_png_bits: 16
