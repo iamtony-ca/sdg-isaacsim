@@ -60,6 +60,8 @@ class DefaultSceneBuilder(SceneBuilder):
         usd_path = self.resolve_asset_usd(spec.obj_id)
         semantic_class = spec.semantic.get("class", spec.obj_id)
         keypoints_local = self.load_keypoints(spec.obj_id)  # object-local 3D kpts or None
+        origin_local = self.resolve_origin(spec.origin, keypoints_local)  # pose origin or None
+        part_defs = self.load_parts(spec.obj_id)            # sub-prim semantic parts or []
         paths: List[str] = []
 
         for i in range(max(1, spec.count)):
@@ -72,6 +74,7 @@ class DefaultSceneBuilder(SceneBuilder):
             )
             prim_path = str(prim.GetPath())
             self._apply_physics(rep, prim, spec.physics)
+            parts = self._label_parts(rep, prim_path, part_defs)  # semantics on sub-prims
             paths.append(prim_path)
             self.instances.append(
                 {
@@ -81,9 +84,32 @@ class DefaultSceneBuilder(SceneBuilder):
                     "prim": prim,
                     "semantic_class": semantic_class,
                     "keypoints_local": keypoints_local,
+                    "origin_local": origin_local,
+                    "parts": parts,  # [{name, class, prim_path}] labelled sub-prims
                 }
             )
         self.object_prims[spec.obj_id] = paths
+
+    def _label_parts(self, rep, prim_path: str, part_defs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Apply each part's semantic class to its sub-prim so it shows up as a separate mask
+        in semantic/instance segmentation. Skips (with a warning) any part whose sub-prim path
+        does not resolve — silent mislabels would be worse than a visible skip."""
+        if not part_defs:
+            return []
+        import omni.usd
+
+        stage = omni.usd.get_context().get_stage()
+        out: List[Dict[str, Any]] = []
+        for pd in part_defs:
+            full = f"{prim_path}/{pd['prim']}"
+            sub = stage.GetPrimAtPath(full)
+            if not sub or not sub.IsValid():
+                print(f"[sdg][scene] part '{pd['name']}' sub-prim not found: {full} — skipping "
+                      f"(check parts.json 'prim' path against the object USD)")
+                continue
+            rep.functional.modify.semantics([sub], {"class": pd["class"]}, mode="add")
+            out.append({"name": pd["name"], "class": pd["class"], "prim_path": full})
+        return out
 
     def _apply_physics(self, rep, prim, physics: Dict[str, Any]) -> None:
         if not physics:

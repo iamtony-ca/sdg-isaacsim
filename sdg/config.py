@@ -30,6 +30,11 @@ class ObjectSpec:
     count: int = 1
     physics: Dict[str, Any] = field(default_factory=dict)
     semantic: Dict[str, Any] = field(default_factory=dict)
+    # pose_6d origin: where the object frame's origin sits (object-local, mesh units — same
+    # frame as keypoints.json). Accepts [x,y,z] or {keypoint: <i>}. None = the asset's own
+    # origin (import_cad centres the bbox). Lets pose GT align to the observed surface (e.g.
+    # a top face) instead of an interior/bottom point — see CONSUMER_6DPOSE.md §4-E.
+    origin: Any = None
 
 
 @dataclass

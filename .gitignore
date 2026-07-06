@@ -1,6 +1,7 @@
 CLAUDE.md
 .claude
 
+
 # generated data
 datasets/
 # large binary assets (keep per-obj folder structure via .gitkeep; track pointers/metadata only)
@@ -27,3 +28,11 @@ venv/
 # editor
 .vscode/
 .idea/
+
+
+CONSUMER_6DPOSE.md
+# DR asset pools (third-party binaries — provide your own)
+assets/env/**/*.hdr
+assets/env/**/*.exr
+assets/textures/**/*.png
+assets/textures/**/*.jpg

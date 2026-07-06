@@ -92,6 +92,25 @@ class FrameCollector:
                 pass
         self._annots.clear()
 
+    def camera_ready(self) -> bool:
+        """True once camera_params yields usable data: a non-singular view transform AND a
+        non-zero aperture. The SyntheticData graph needs a step (or a few) before it returns
+        valid camera data; until then cameraViewTransform is singular (all-zero) and
+        cameraAperture is [0, 0], which would make _safe_inv fall back to pinv and _intrinsics
+        divide by zero. run_sdg's warm-up loop polls this before capturing frame 0.
+        """
+        if "camera_params" not in self._annots:
+            return True
+        cam = self._annots["camera_params"].get_data()
+        ap = np.asarray(cam.get("cameraAperture", [0.0, 0.0]), dtype=np.float64).reshape(-1)
+        if ap.size < 2 or ap[0] == 0.0 or ap[1] == 0.0:
+            return False
+        view = np.asarray(cam.get("cameraViewTransform", []), dtype=np.float64).reshape(-1)
+        if view.size < 16:
+            return False
+        m = view.reshape(4, 4)
+        return bool(np.all(np.isfinite(m)) and abs(np.linalg.det(m)) > 1e-9)
+
     # ----------------------------------------------------------------- collect
     def collect(self, frame_id: int, scene_instances: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Read all attached annotators (call AFTER app.step()) into a Frame dict."""
@@ -205,8 +224,10 @@ class FrameCollector:
         aperture = np.asarray(cam["cameraAperture"]).reshape(-1)
         offset = np.asarray(cam.get("cameraApertureOffset", [0.0, 0.0])).reshape(-1)
         ah, av = float(aperture[0]), float(aperture[1])
-        fx = f * width / ah
-        fy = f * height / av
+        # Guard against a not-ready camera_params (aperture [0,0]); the warm-up loop should
+        # prevent this, but never divide by zero here (matches the cx/cy guards below).
+        fx = f * width / ah if ah else 0.0
+        fy = f * height / av if av else 0.0
         cx = width * (0.5 + (float(offset[0]) / ah if ah else 0.0))
         cy = height * (0.5 + (float(offset[1]) / av if av else 0.0))
         return {"fx": fx, "fy": fy, "cx": cx, "cy": cy, "width": float(width), "height": float(height)}
@@ -225,7 +246,25 @@ class FrameCollector:
 
         if self.want_pose and obj_rv is not None:
             pose_cam = _to_metres(cam_ctx.T_cam_world @ obj_rv.T, cam_ctx.mpu)  # object->camera, metres
+            # obj_rv (local->world) often bakes a uniform modeling scale — e.g. a mm-authored
+            # CAD mesh placed at scale 0.001 to be metre-sized — so the rotation block is
+            # scale*R and det!=1. 6D-pose GT must be a rigid transform: strip the scale so
+            # cam_R is a pure rotation (det=+1).
+            pose_cam[:3, :3] = _orthonormalize_rotation(pose_cam[:3, :3])
+            origin_local = inst.get("origin_local")
+            if origin_local is not None:
+                # Re-define the pose origin at a configured object-local point (same frame as
+                # keypoints) so translation reports that point in camera-frame metres, keeping
+                # the orientation. Consumer CAD must share this origin. (CONSUMER_6DPOSE.md §4-E)
+                o_cam, _ = cam_ctx.project(np.asarray([origin_local], dtype=np.float64), obj_rv)
+                pose_cam[:3, 3] = o_cam[0]
             out["pose_cam"] = pose_cam.tolist()
+
+        if inst.get("parts"):
+            # part masks live in the semantic/instance channels (each part sub-prim carries its
+            # own class); expose the part list so downstream can find them by class/prim.
+            out["parts"] = [{"name": p["name"], "class": p["class"], "prim_path": p["prim_path"]}
+                            for p in inst["parts"]]
 
         # Render instance ids matched to this object's prim — lets mask-based writers
         # (e.g. BOP) slice per-object masks. Cheap; ignored by writers that don't use it.
@@ -297,6 +336,20 @@ def _safe_inv(T: np.ndarray) -> np.ndarray:
         print("[sdg][collector] singular cameraViewTransform — using pinv "
               "(camera_params not ready?). Check warm-up / step count.")
         return np.linalg.pinv(T)
+
+
+def _orthonormalize_rotation(R: np.ndarray) -> np.ndarray:
+    """Nearest proper rotation (orthonormal, det=+1) to a 3x3 that may carry the object's
+    modeling scale/shear, via polar decomposition (SVD). USD object transforms frequently
+    bake a uniform scale (a mm-authored mesh placed at 0.001 to be metre-sized), which would
+    otherwise leave 6D-pose cam_R with det!=1 and break any BOP/pose consumer.
+    """
+    U, _, Vt = np.linalg.svd(np.asarray(R, dtype=np.float64))
+    Rn = U @ Vt
+    if np.linalg.det(Rn) < 0.0:  # reflection -> flip the least-significant singular axis
+        U[:, -1] *= -1.0
+        Rn = U @ Vt
+    return Rn
 
 
 def _to_metres(T: np.ndarray, mpu: float) -> np.ndarray:

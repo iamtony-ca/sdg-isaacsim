@@ -1,0 +1,89 @@
+run:
+  name: dr_demo
+  num_frames: 9
+  seed: 42
+  headless: true
+  output_dir: datasets/dr_demo
+scene:
+  builder: default
+  background: none
+  ground_plane: true
+objects:
+- obj_id: obj_000
+  count: 1
+  physics:
+    collider: true
+    gravity: true
+    mass: null
+  semantic:
+    class: obj_000
+randomizers:
+- type: lighting
+  intensity:
+  - 800
+  - 2500
+  hdri: assets/env/hdri
+  hdri_rotate: true
+- type: materials
+  target: objects
+  roughness:
+  - 0.1
+  - 0.8
+  metallic:
+  - 0.0
+  - 0.4
+  base_color: hsv_jitter
+- type: materials
+  target: ground
+  textures: assets/textures
+  texture_prob: 0.85
+  texture_scale:
+  - 3.0
+  - 10.0
+  base_color: hsv_jitter
+- type: pose
+  target: objects
+  position:
+    x:
+    - -0.15
+    - 0.15
+    y:
+    - -0.15
+    - 0.15
+    z:
+    - 0.0
+    - 0.1
+  rotation: uniform_so3
+- type: camera
+  mode: look_at
+  distance:
+  - 0.6
+  - 1.1
+  elevation_deg:
+  - 20
+  - 60
+  azimuth_deg:
+  - -180
+  - 180
+sensors:
+- name: cam0
+  type: ideal
+  resolution:
+  - 1280
+  - 720
+  intrinsics:
+    fx: 952.2
+    fy: 952.2
+    cx: 640.0
+    cy: 360.0
+annotators:
+  rgb: true
+  depth: true
+  semantic_segmentation: true
+  instance_segmentation: true
+  bbox_2d: true
+  bbox_3d: true
+  pose_6d: true
+writer:
+  format: generic
+  depth_png_bits: 16

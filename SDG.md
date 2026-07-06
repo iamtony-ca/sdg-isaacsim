@@ -68,10 +68,17 @@ objects:                      # 객체는 obj_id 로만 참조 (특정명 하드
     count: 1
     physics: {collider: true, gravity: true, mass: null}
     semantic: {class: obj_000}
+    # origin: [x,y,z]  또는 {keypoint: i}   # (옵션) pose_6d 원점을 object-local 점으로 재정의
+    #                                        # (관측 표면 정렬용; consumer CAD 도 동일 원점). 기본=asset 원점.
+    # part-level mask 는 assets/obj/<obj_id>/parts.json 로 서브프림에 semantic class 부여(전용 asset 파일).
 
 randomizers:                  # 순서대로 매 프레임 적용
+  # lighting: hdri(dir/list)+hdri_rotate 로 image-based lighting/배경 DR (dome env map + 회전)
   - {type: lighting,   intensity: [500, 3000], count: [1, 3], kinds: [dome, distant, rect]}
-  - {type: materials,  roughness: [0.1, 0.9], metallic: [0.0, 0.6], base_color: hsv_jitter}
+  # materials: target objects|ground|all. textures(dir)+texture_prob+texture_scale 로 텍스처 DR.
+  #   텍스처 이미지는 UV 필요 → UV 없는 STL 은 project_uvw(world planar)라 ground/평면엔 깨끗,
+  #   오브젝트 수직면엔 smear. 그래서 오브젝트는 색/roughness/metallic 랜덤화가 실질 경로.
+  - {type: materials,  target: all, roughness: [0.1, 0.9], metallic: [0.0, 0.6], base_color: hsv_jitter}
   - {type: pose,       target: objects, position: {x: [-0.2,0.2], y: [-0.2,0.2], z: [0,0.1]}, rotation: uniform_so3}
   - {type: camera,     mode: look_at, distance: [0.6, 2.0], elevation_deg: [20, 80], azimuth_deg: [-180,180]}
   - {type: distractors, pool: [], count: [0, 3]}     # 유사/이질 객체 (비면 없음)
@@ -80,7 +87,9 @@ sensors:
   - name: cam0
     type: ideal                 # ideal | realsense_depth(옵션 열화)
     resolution: [1280, 720]
-    intrinsics: {focal_mm: null, hfov_deg: 69}     # 또는 focal/principal 직접
+    # intrinsics 3-mode (택1): 실카메라 정합엔 {fx,fy,cx,cy}(정사각·off-centre 지원),
+    #   또는 {focal_mm} / {hfov_deg}(둘 다 정사각 픽셀). calibration/ 실측치를 fx/fy/cx/cy 로 그대로.
+    intrinsics: {fx: 952.2, fy: 952.2, cx: 640.0, cy: 360.0}
     # realsense_depth 사용 시: {model: d435, bias_mm: 0, noise: quadratic, holes: true, calib: calibration/...}
 
 annotators:                     # 필요한 GT 만 켠다

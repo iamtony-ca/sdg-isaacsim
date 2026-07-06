@@ -114,12 +114,14 @@ def _run_inside_app(cfg: RunConfig, app, writer) -> None:
     # let referenced assets / render products finish loading before capture
     for _ in range(2):
         app.update()
-    # Warm-up capture: the first orchestrator.step primes the SyntheticData graph so
-    # annotators (notably camera_params) return valid data on frame 0. Discarded.
+    # Warm-up: the first orchestrator.step primes the SyntheticData graph so annotators
+    # (notably camera_params) return valid data. Readiness is timing-dependent — a single
+    # step used to intermittently leave camera_params with a singular view transform / zero
+    # aperture, crashing frame 0. Step until every collector reports ready (bounded).
     if rands:
         for r in rands:
             r.apply(0)
-    app.step(rt_subframes=16)
+    _warm_up(app, collectors)
 
     # 4) frame loop --------------------------------------------------------
     widx = 0
@@ -139,6 +141,23 @@ def _run_inside_app(cfg: RunConfig, app, writer) -> None:
 
     for c in collectors:
         c.teardown()
+
+
+def _warm_up(app, collectors, max_steps: int = 16) -> None:
+    """Step the app until every collector's camera_params is ready, or give up (bounded).
+
+    The first step uses extra subframes to settle large scene/material loads; subsequent
+    steps use the config default. Prevents the intermittent frame-0 crash where capture ran
+    before the SyntheticData graph produced a valid camera view transform / aperture.
+    """
+    for i in range(max_steps):
+        app.step(rt_subframes=16 if i == 0 else -1)
+        if all(c.camera_ready() for c in collectors):
+            if i:
+                print(f"[sdg] camera_params ready after {i + 1} warm-up steps", flush=True)
+            return
+    print(f"[sdg] warning: camera_params not ready after {max_steps} warm-up steps — "
+          "proceeding anyway (intrinsics/pose may be degraded on early frames)", flush=True)
 
 
 def _persist_error(output_dir: str) -> None:

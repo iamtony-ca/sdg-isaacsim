@@ -114,8 +114,10 @@ def _jsonify(v):
 
 def _obj_meta(o: Dict[str, Any]) -> Dict[str, Any]:
     out = {"obj_id": o.get("obj_id"), "instance_id": o.get("instance_id")}
-    # bbox_3d is now a self-describing dict; keypoints are lists. All serialized as-is.
-    for k in ("pose_cam", "bbox_2d", "bbox_3d", "keypoints_2d", "keypoints_3d"):
+    # bbox_3d is now a self-describing dict; keypoints/parts are lists. All serialized as-is.
+    # `parts` lists labelled sub-prims (name/class/prim_path); their masks live in the
+    # semantic/instance channels, sliced by class (see semantic_id_to_labels).
+    for k in ("pose_cam", "bbox_2d", "bbox_3d", "keypoints_2d", "keypoints_3d", "parts"):
         if k in o and o[k] is not None:
             out[k] = _jsonify(o[k])
     return out

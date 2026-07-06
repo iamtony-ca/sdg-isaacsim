@@ -89,3 +89,46 @@ class SceneBuilder(ABC):
             p = kp.get("point") if isinstance(kp, dict) else kp
             pts.append([float(p[0]), float(p[1]), float(p[2])])
         return pts or None
+
+    def load_parts(self, obj_id: str) -> List[Dict[str, Any]]:
+        """Load part definitions from assets/obj/<obj_id>/parts.json, if present.
+
+        A "part" labels a sub-prim of the object with its own semantic class so segmentation
+        annotators emit a part mask (e.g. a top flange) separate from the whole-object mask —
+        see CONSUMER_6DPOSE.md §4-E. Format:
+            [{"name": "top_flange", "prim": "<sub-prim path relative to the object>",
+              "class": "<semantic class, defaults to name>"}]
+        `prim` is a path under the spawned object prim (leading "/" optional). Returns [] when
+        no parts.json exists. Object-intrinsic structure lives with the asset (like keypoints).
+        """
+        path = os.path.join(self.asset_dir(obj_id), "parts.json")
+        if not os.path.isfile(path):
+            return []
+        with open(path, "r") as f:
+            data = json.load(f)
+        raw = data.get("parts", data) if isinstance(data, dict) else data
+        parts: List[Dict[str, Any]] = []
+        for p in raw:
+            rel = str(p["prim"]).lstrip("/")
+            name = p.get("name", rel.rsplit("/", 1)[-1])
+            parts.append({"name": name, "prim": rel, "class": p.get("class", name)})
+        return parts
+
+    @staticmethod
+    def resolve_origin(origin: Any, keypoints_local) -> Optional[List[float]]:
+        """Turn an `objects[].origin` config value into an object-local point, or None.
+
+        Accepts [x,y,z] (object-local, mesh units) or {"keypoint": <index>} (reuse a loaded
+        keypoint as the origin). Returns None for no override (use the asset's own origin).
+        """
+        if origin is None:
+            return None
+        if isinstance(origin, dict):
+            if "keypoint" in origin:
+                i = int(origin["keypoint"])
+                if not keypoints_local or i < 0 or i >= len(keypoints_local):
+                    raise ValueError(f"origin keypoint index {i} out of range "
+                                     f"(have {len(keypoints_local or [])} keypoints)")
+                return [float(c) for c in keypoints_local[i]]
+            raise ValueError(f"unsupported origin spec: {origin} (use [x,y,z] or {{keypoint: i}})")
+        return [float(origin[0]), float(origin[1]), float(origin[2])]
