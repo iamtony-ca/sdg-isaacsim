@@ -1,0 +1,56 @@
+# OFFLINE env-USD background DR — object placed inside a real 3D environment (room/office/...).
+# All assets are LOCAL (localize once with: /isaac-sim/python.sh tools/fetch_isaac_assets.py
+# --envs simple_room,office). No network at generation time. See config/env_online.yaml for the
+# cloud-preset (online) counterpart — keep the two modes separate, don't mix.
+
+run:
+  name: env_offline
+  num_frames: 6
+  seed: 42
+  headless: true
+  output_dir: datasets/env_offline
+
+scene:
+  builder: default
+  background: none        # the env comes from the `background` randomizer, not scene.background
+  ground_plane: false     # the env USD brings its own floor/walls — no separate ground plane
+
+objects:
+  - obj_id: obj_000
+    count: 1
+    # env floor is visual-only (no collider) -> disable gravity/collider and let `pose` place
+    # the object just above the floor; otherwise a gravity object falls through the world.
+    physics: {collider: false, gravity: false}
+    semantic: {class: obj_000}
+
+randomizers:
+  # background: pre-references the LOCAL env pool, reveals one per frame (interval=1). Entries
+  # are local dirs -> OFFLINE. Heavy stages: raise `interval` to switch every N frames instead.
+  - {type: background, pool: [assets/env/usd/simple_room, assets/env/usd/office], interval: 1}
+  # lighting: modest dome ambient + colour temperature + overhead fixtures (no HDRI — the env
+  # is the backdrop, not a sky). Keeps the object lit and casts shadows onto the env floor.
+  - {type: lighting, intensity: [400, 1200], color_temperature: [3000, 6500],
+     fixtures: {kinds: [rect, distant], count: [1, 2], intensity: [400, 2000],
+                color_temperature: [3000, 6500], distance: [2.0, 5.0], elevation_deg: [40, 85], size: [0.5, 2.0]}}
+  - {type: materials, target: objects, roughness: [0.1, 0.9], metallic: [0.0, 0.6], base_color: hsv_jitter}
+  - {type: pose,      target: objects, position: {x: [-0.2, 0.2], y: [-0.2, 0.2], z: [0.0, 0.05]}, rotation: uniform_so3}
+  - {type: camera,    mode: look_at, distance: [0.6, 1.2], elevation_deg: [15, 60], azimuth_deg: [-180, 180]}
+
+sensors:
+  - name: cam0
+    type: ideal
+    resolution: [1280, 720]
+    intrinsics: {fx: 952.2, fy: 952.2, cx: 640.0, cy: 360.0}
+
+annotators:
+  rgb: true
+  depth: true
+  semantic_segmentation: true
+  instance_segmentation: true
+  bbox_2d: true
+  bbox_3d: true
+  pose_6d: true
+
+writer:
+  format: generic
+  depth_png_bits: 16

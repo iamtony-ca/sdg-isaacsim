@@ -31,8 +31,10 @@ venv/
 
 
 CONSUMER_6DPOSE.md
-# DR asset pools (third-party binaries — provide your own)
+# DR asset pools (third-party binaries — localize via tools/fetch_isaac_assets.py)
 assets/env/**/*.hdr
 assets/env/**/*.exr
 assets/textures/**/*.png
 assets/textures/**/*.jpg
+# localized env-USD backgrounds (stage + collected deps) — regenerate with --envs
+assets/env/usd/

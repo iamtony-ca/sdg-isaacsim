@@ -138,13 +138,18 @@ class DefaultSceneBuilder(SceneBuilder):
 def _resolve_env_usd(bg: str) -> str:
     """Map a background keyword to a USD env path, or pass through an explicit path.
 
-    Only explicit paths are resolved for now; named presets (e.g. 'warehouse') that
-    depend on the Nucleus/assets root are left for S3 (needs the 6.0.1 assets-root
-    lookup verified before hardcoding a URL — see CLAUDE.md 'no API guessing').
+    Explicit .usd(a/c/z) paths/URLs pass through unchanged. Named presets (e.g. 'warehouse',
+    'simple_room', 'office', 'grid') resolve against the Isaac Sim cloud assets root via
+    isaacsim.storage.native.get_assets_root_path() — see sdg/assets.py::ISAAC_ENVIRONMENTS.
     """
-    if bg.lower().endswith((".usd", ".usda", ".usdc", ".usdz")):
+    from ..assets import ISAAC_ENVIRONMENTS, is_url, resolve_env_preset
+
+    if is_url(bg) or bg.lower().endswith((".usd", ".usda", ".usdc", ".usdz")):
         return bg
+    url = resolve_env_preset(bg)
+    if url is not None:
+        return url
     raise ValueError(
-        f"background preset '{bg}' not wired yet; pass an explicit .usd path or use "
-        f"'none'/'ground_plane' (named env presets land in S3)."
+        f"unknown background '{bg}'; use 'none' / 'ground_plane', a preset "
+        f"({sorted(ISAAC_ENVIRONMENTS)}), or an explicit .usd path/URL."
     )

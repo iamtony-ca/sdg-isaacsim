@@ -13,25 +13,45 @@ from typing import Any, Dict, List
 
 
 def resolve_asset_list(spec: Any, exts) -> List[str]:
-    """Resolve a config value into a list of existing files, for asset-pool randomizers
-    (HDRIs, textures). `spec` is either a directory (globbed recursively for `exts`) or an
-    explicit list of file paths (dirs inside the list are globbed too). Returns sorted unique
-    existing files. Keeps randomizers asset-agnostic: point them at a folder in config, no
-    hardcoded engine paths (which are version-fragile)."""
+    """Resolve a config value into a list of asset paths, for asset-pool randomizers
+    (HDRIs, textures). Each item of `spec` (a single value or a list) may be:
+      - a local directory      -> globbed recursively for `exts`,
+      - a local file path      -> kept if its extension matches,
+      - a remote URL           -> passed through (omniverse://, http(s)://, file://),
+      - `isaac_skies[:Cat,..]` -> expanded to Isaac Sim's built-in HDRI sky library URLs.
+    Returns a de-duplicated list (local files sorted; URL/library order preserved). Keeps
+    randomizers asset-agnostic: point them at a folder OR the engine library in config, with
+    no hardcoded (version-fragile) cloud path baked into code."""
     if not spec:
         return []
+    from .. import assets as _assets
+
     items = spec if isinstance(spec, list) else [spec]
     exts = tuple(e.lower() for e in exts)
-    out: List[str] = []
+    local: List[str] = []
+    remote: List[str] = []  # URL/library items keep their given order (no on-disk check)
     for it in items:
+        if _assets.is_sky_keyword(it):
+            remote += _assets.sky_urls(it)
+            continue
+        if _assets.is_url(it):
+            remote.append(it)
+            continue
         it = os.path.expanduser(str(it))
         if os.path.isdir(it):
             for p in glob.glob(os.path.join(it, "**", "*"), recursive=True):
                 if p.lower().endswith(exts):
-                    out.append(p)
+                    local.append(p)
         elif os.path.isfile(it) and it.lower().endswith(exts):
-            out.append(it)
-    return sorted(set(out))
+            local.append(it)
+    # de-dup while preserving remote order after sorted locals
+    seen = set()
+    out: List[str] = []
+    for p in sorted(set(local)) + remote:
+        if p not in seen:
+            seen.add(p)
+            out.append(p)
+    return out
 
 
 class Randomizer(ABC):

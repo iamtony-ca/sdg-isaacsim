@@ -1,0 +1,54 @@
+# ONLINE env-USD background DR — same as env_offline.yaml but backgrounds are Isaac cloud
+# PRESETS resolved from the assets server at generation time (network REQUIRED; nothing is
+# localized). Use this when you don't want to pre-download; use config/env_offline.yaml for
+# air-gapped/offline deploys. Keep the two modes separate — don't mix local paths and presets.
+
+run:
+  name: env_online
+  num_frames: 6
+  seed: 42
+  headless: true
+  output_dir: datasets/env_online
+
+scene:
+  builder: default
+  background: none
+  ground_plane: false
+
+objects:
+  - obj_id: obj_000
+    count: 1
+    physics: {collider: false, gravity: false}
+    semantic: {class: obj_000}
+
+randomizers:
+  # background: pool entries are PRESET NAMES -> resolved to cloud env-USD URLs (ONLINE).
+  # Available presets: grid, grid_black, grid_curved, warehouse, warehouse_full,
+  #   warehouse_shelves, simple_room, office, hospital  (see sdg/assets.py::ISAAC_ENVIRONMENTS).
+  - {type: background, pool: [simple_room, office, warehouse], interval: 1}
+  # lighting: dome + colour temperature + fixtures. Online can also pull skies: hdri: isaac_skies.
+  - {type: lighting, intensity: [400, 1200], color_temperature: [3000, 6500],
+     fixtures: {kinds: [rect, distant], count: [1, 2], intensity: [400, 2000],
+                color_temperature: [3000, 6500], distance: [2.0, 5.0], elevation_deg: [40, 85], size: [0.5, 2.0]}}
+  - {type: materials, target: objects, roughness: [0.1, 0.9], metallic: [0.0, 0.6], base_color: hsv_jitter}
+  - {type: pose,      target: objects, position: {x: [-0.2, 0.2], y: [-0.2, 0.2], z: [0.0, 0.05]}, rotation: uniform_so3}
+  - {type: camera,    mode: look_at, distance: [0.6, 1.2], elevation_deg: [15, 60], azimuth_deg: [-180, 180]}
+
+sensors:
+  - name: cam0
+    type: ideal
+    resolution: [1280, 720]
+    intrinsics: {fx: 952.2, fy: 952.2, cx: 640.0, cy: 360.0}
+
+annotators:
+  rgb: true
+  depth: true
+  semantic_segmentation: true
+  instance_segmentation: true
+  bbox_2d: true
+  bbox_3d: true
+  pose_6d: true
+
+writer:
+  format: generic
+  depth_png_bits: 16

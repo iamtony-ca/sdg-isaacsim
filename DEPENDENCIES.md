@@ -53,6 +53,41 @@
 - `datasets/` 는 생성 출력물 — gitignore.
 - 오브젝트 에셋 없이 파이프라인만 검증하려면 `config/smoke.yaml`(objects 비어 있음) 사용.
 
+### 3-1. DR 배경/재질 에셋 풀 (★ 온라인/오프라인 분리)
+
+랜덤화기가 매 프레임 바꾸는 **바닥 재질**·**dome HDRI 하늘**·**환경 USD 배경**은 Isaac Sim 이 로컬에
+번들하지 않고 **NVIDIA 클라우드 assets 서버**에 둔다. 두 모드를 **명확히 분리**해서 쓴다:
+
+- **온라인 모드**: config 가 클라우드 키워드/프리셋을 직접 참조 → 생성 시 네트워크 필요, 로컬 파일 불필요.
+  (`hdri: isaac_skies[:Indoor,Night]`, `background` randomizer `pool: [warehouse, office, …]`.)
+  예시 config: `config/env_online.yaml`.
+- **오프라인 모드**: `tools/fetch_isaac_assets.py` 로 에셋을 repo 로 **1회 다운로드/로컬화** → config 는
+  로컬 경로만 참조 → 생성 시 **네트워크 불필요**(에어갭 배포). 예시: `config/env_offline.yaml`,
+  `config/dr_demo.yaml`. **섞지 말 것** — 한 config 는 온라인 또는 오프라인 중 하나로.
+
+```bash
+# 오프라인 로컬화 (온라인 1회 실행). 카테고리별 독립 — 원하는 것만:
+/isaac-sim/python.sh tools/fetch_isaac_assets.py --all                    # 바닥+하늘 (envs 제외)
+/isaac-sim/python.sh tools/fetch_isaac_assets.py --envs simple_room,office # 환경 USD (opt-in, 대용량)
+/isaac-sim/python.sh tools/fetch_isaac_assets.py --floors --dry-run        # 대상 URL 만 출력
+```
+
+로컬화 대상 → 위치:
+- **바닥 텍스처**(원목/석재/타일/자갈/대리석 ~50종) → `assets/textures/ground/`  (`--floors`)
+- **HDRI 하늘**(Clear/Cloudy/Indoor/Night 15종) → `assets/env/hdri/`  (`--skies`)
+- **환경 USD 배경**(warehouse/office/simple_room/hospital/grid…) → `assets/env/usd/<name>/`  (`--envs`,
+  대용량이라 `--all` 에 미포함·opt-in). 환경은 **의존성까지 수집**(`omni.kit.usd.collect.Collector`:
+  stage + 머티리얼 + 텍스처 + props) 해야 오프라인에서 안 깨진다. (예: office ≈680MB, simple_room ≈120MB.)
+
+- 다운로드 바이너리는 gitignore(서드파티, `mesh.usd` 와 동일 정책 — 툴로 재생성). **오프라인 배포 시
+  배포 번들에 `assets/textures/ground/`·`assets/env/hdri/`·`assets/env/usd/` 를 포함**해야 한다.
+- **정확한 클라우드 URL 은 `assets/ASSET_SOURCES.md`(git 추적)에 자동 기록** — 처음부터 다시 셋업할 때
+  참고용. **섹션별 병합**이라 `--envs` 만 재실행해도 바닥/하늘 기록이 지워지지 않는다. 소스 정의(어떤
+  클라우드 dir 을 열거/큐레이트/collect 하는지)는 `sdg/assets.py` 상단 주석.
+- API(전부 6.0.1 설치본 대조, 추측 없음): `omni.client.list`(dir 열거), `omni.client.copy(...OVERWRITE)`
+  (파일 다운로드), `omni.kit.usd.collect.Collector`(환경 의존성 수집), 루트는
+  `isaacsim.storage.native.get_assets_root_path()`.
+
 ## 4. 재현 절차 (fresh clone → 첫 렌더)
 
 ```bash
@@ -66,7 +101,10 @@ git clone <this-repo> && cd sdg_ws
 /isaac-sim/python.sh sdg/run_sdg.py --config config/smoke.yaml --headless
 #   -> datasets/smoke/{rgb,depth,semantic,meta}/000000.png ... + dataset.json
 
-# 3) 실제 오브젝트로 생성 (assets/obj/obj_000/ 에 USD 배치 후)
+# 3) (선택) DR 배경/재질 풀 로컬화 — 사실적 바닥·하늘 (온라인 1회, §3-1)
+/isaac-sim/python.sh tools/fetch_isaac_assets.py
+
+# 4) 실제 오브젝트로 생성 (assets/obj/obj_000/ 에 USD 배치 후)
 /isaac-sim/python.sh sdg/run_sdg.py --config config/example.yaml --headless
 ```
 

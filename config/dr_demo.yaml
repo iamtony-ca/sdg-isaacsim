@@ -19,11 +19,47 @@ objects:
     class: obj_000
 randomizers:
 - type: lighting
+  # dome = ambient fill: lo>0 so the scene is never fully dark (office/factory always lit).
+  # Kept modest because fixtures below add the key light — avoids double-exposure blow-out.
+  # (For indoor-only realism, point `hdri` at the Indoor subset; bright outdoor skies can
+  #  over-expose — some exposure variance is fine/beneficial DR, full blow-out is not.)
   intensity:
-  - 800
-  - 2500
+  - 300
+  - 900
+  # blackbody colour temperature: warm (~3000K incandescent/warm-LED) <-> cool (~6500K office
+  # fluorescent/daylight). Physically-plausible tint variety across environments.
+  color_temperature:
+  - 3000
+  - 6500
+  # HDRI env maps (localized into the repo for offline use by tools/fetch_isaac_assets.py).
+  # Online alternative (no local files): hdri: isaac_skies  (or isaac_skies:Indoor,Night).
   hdri: assets/env/hdri
   hdri_rotate: true
+  # overhead fixtures -> directional key light + cast shadows (ceiling panel / angled window).
+  # count lo=0 => some frames are pure soft ambient (also realistic). Intensities kept modest
+  # since dome+HDRI already light the scene; raise if you want harsher, higher-contrast light.
+  fixtures:
+    kinds:
+    - rect
+    - distant
+    count:
+    - 0
+    - 2
+    intensity:
+    - 400
+    - 2000
+    color_temperature:
+    - 3000
+    - 6500
+    distance:
+    - 2.0
+    - 5.0
+    elevation_deg:
+    - 35
+    - 85
+    size:
+    - 0.5
+    - 2.0
 - type: materials
   target: objects
   roughness:
@@ -35,11 +71,13 @@ randomizers:
   base_color: hsv_jitter
 - type: materials
   target: ground
-  textures: assets/textures
-  texture_prob: 0.85
+  # Realistic floor library (wood / stone / tile / gravel / marble ...) localized by
+  # tools/fetch_isaac_assets.py -> replaces the unrealistic checkerboard ground. Offline.
+  textures: assets/textures/ground
+  texture_prob: 0.9
   texture_scale:
+  - 0.7
   - 3.0
-  - 10.0
   base_color: hsv_jitter
 - type: pose
   target: objects
