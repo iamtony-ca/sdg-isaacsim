@@ -94,6 +94,13 @@
 # 0) Isaac Sim 6.0.1 이 /isaac-sim 에 설치되어 있어야 함 (위 표)
 git clone <this-repo> && cd sdg_ws
 
+# ★ 한 방 부트스트랩: gitignore 된 에셋(바닥/하늘/환경USD + CAD->mesh.usd) 을 전부 재생성.
+#   (fetch_isaac_assets + import_cad 를 순서대로 subprocess 로 호출. envs 는 대용량이라 opt-in.)
+/isaac-sim/python.sh tools/setup_assets.py            # floors + skies + objects (기본)
+/isaac-sim/python.sh tools/setup_assets.py --all      # + 환경 USD (office~680MB 등)
+/isaac-sim/python.sh tools/setup_assets.py --dry-run  # 실행할 명령만 출력(다운로드 X)
+#   idempotent: 이미 채워진 dir 은 건너뜀(--force 로 강제 재생성). 아래 1~4 를 자동화한 것.
+
 # 1) 순수 파이썬 레이어 확인 (Isaac 미기동)
 /isaac-sim/python.sh sdg/run_sdg.py --config config/smoke.yaml --dry-run
 
