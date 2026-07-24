@@ -4,17 +4,17 @@ CLAUDE.md
 
 # generated data
 datasets/
-# large binary assets (keep per-obj folder structure via .gitkeep; track pointers/metadata only)
-assets/obj/**/*.usd
-assets/obj/**/*.usdc
-assets/obj/**/*.usda
-assets/obj/**/*.usdz
-assets/obj/**/*.obj
-assets/obj/**/*.stl
-assets/obj/**/*.ply
-assets/obj/**/*.fbx
-assets/obj/**/*.png
-assets/obj/**/*.jpg
+### large binary assets (keep per-obj folder structure via .gitkeep; track pointers/metadata only)
+# assets/obj/**/*.usd
+# assets/obj/**/*.usdc
+# assets/obj/**/*.usda
+# assets/obj/**/*.usdz
+# assets/obj/**/*.obj
+# assets/obj/**/*.stl
+# assets/obj/**/*.ply
+# assets/obj/**/*.fbx
+# assets/obj/**/*.png
+# assets/obj/**/*.jpg
 # python
 __pycache__/
 *.pyc
@@ -31,10 +31,10 @@ venv/
 
 
 CONSUMER_6DPOSE.md
-# DR asset pools (third-party binaries — localize via tools/fetch_isaac_assets.py)
-assets/env/**/*.hdr
-assets/env/**/*.exr
-assets/textures/**/*.png
-assets/textures/**/*.jpg
-# localized env-USD backgrounds (stage + collected deps) — regenerate with --envs
-assets/env/usd/
+### DR asset pools (third-party binaries — localize via tools/fetch_isaac_assets.py)
+# assets/env/**/*.hdr
+# assets/env/**/*.exr
+# assets/textures/**/*.png
+# assets/textures/**/*.jpg
+### localized env-USD backgrounds (stage + collected deps) — regenerate with --envs
+# assets/env/usd/

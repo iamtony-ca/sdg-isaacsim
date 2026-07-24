@@ -1,0 +1,96 @@
+#usda 1.0
+(
+    customLayerData = {
+        dictionary cameraSettings = {
+            dictionary Front = {
+                double3 position = (50101.44464874269, -1.1124755483203391e-11, 0)
+                double radius = 500
+            }
+            dictionary Perspective = {
+                double3 position = (819.96504794197, 819.9650136096947, 1225.7432989703334)
+                double3 target = (0.000034332275390625, 0, 405.7782853606386)
+            }
+            dictionary Right = {
+                double3 position = (0, -50101.444580078125, -1.1124755467956798e-11)
+                double radius = 500
+            }
+            dictionary Top = {
+                double3 position = (0, 0, 50811.556579589844)
+                double radius = 500
+            }
+            string boundCamera = "/OmniverseKit_Persp"
+        }
+        dictionary renderSettings = {
+            bool "rtx:hydra:materialSyncLoads" = 1
+            bool "rtx:materialDb:syncLoads" = 1
+        }
+    }
+    defaultPrim = "Root"
+    metersPerUnit = 1
+    timeCodesPerSecond = 60
+    upAxis = "Z"
+)
+
+def Xform "Root" (
+    kind = "component"
+)
+{
+    def Mesh "SM_Building_03" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI", "MaterialBindingAPI"]
+    )
+    {
+        float3[] extent = [(-101.44458, -101.44458, -0.0000088685665), (101.44465, 101.44458, 811.5566)]
+        int[] faceVertexCounts = [3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+        int[] faceVertexIndices = [0, 1, 2, 0, 2, 3, 4, 5, 6, 6, 5, 7, 8, 9, 10, 10, 9, 11, 12, 13, 14, 14, 13, 15, 16, 17, 18, 17, 16, 19]
+        rel material:binding = </Root/Looks/MI_Building_03>
+        normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1), (1, 0, 0), (1, 0, 0), (1, 0, 0), (1, 0, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (0, 1, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (-1, 0, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0), (0, -1, 0)] (
+            interpolation = "vertex"
+        )
+        uniform token physics:approximation = "none"
+        bool physics:collisionEnabled = 1
+        point3f[] points = [(-101.4445, 101.444565, 811.5566), (-101.444496, -101.44458, 811.5566), (101.44465, -101.444565, 811.5566), (101.44464, 101.44458, 811.5566), (101.44465, -101.444565, 811.5566), (101.44458, -101.444565, -0.0000088685665), (101.44464, 101.44458, 811.5566), (101.444565, 101.44458, -0.0000088685665), (101.44464, 101.44458, 811.5566), (101.444565, 101.44458, -0.0000088685665), (-101.4445, 101.444565, 811.5566), (-101.44458, 101.444565, 0.0000088685665), (-101.4445, 101.444565, 811.5566), (-101.44458, 101.444565, 0.0000088685665), (-101.444496, -101.44458, 811.5566), (-101.444565, -101.44458, 0.0000088685665), (-101.444496, -101.44458, 811.5566), (101.44458, -101.444565, -0.0000088685665), (101.44465, -101.444565, 811.5566), (-101.444565, -101.44458, 0.0000088685665)]
+        texCoord2f[] primvars:st = [(0.1348877, 0.6958008), (0.0055503845, 0.6958008), (0.0055503845, 0.6411133), (0.1348877, 0.6411133), (0.00011110306, 5.203125), (0.00011181831, -0.20410156), (1.2851562, 5.203125), (1.2851562, -0.20410156), (0.00014150143, 5.203125), (0.00014185905, -0.20410156), (1.2851562, 5.203125), (1.2851562, -0.20410156), (0.00013244152, 5.203125), (0.00013303757, -0.20410156), (1.2851562, 5.203125), (1.2851562, -0.20410156), (0.00007343292, 5.203125), (1.2851562, -0.20410156), (1.2851562, 5.203125), (0.00007343292, -0.20410156)] (
+            interpolation = "vertex"
+        )
+        texCoord2f[] primvars:st1 = [(0.19921875, 0.2109375), (0.0078125, 0.2109375), (0.0078125, 0.01953125), (0.19921875, 0.01953125), (0.2265625, 0.9921875), (0.2265625, 0.2265625), (0.41796875, 0.9921875), (0.41796875, 0.2265625), (0.44506836, 0.9921875), (0.4453125, 0.2265625), (0.63671875, 0.9921875), (0.63671875, 0.2265625), (0.0078125, 0.9921875), (0.0078125, 0.2265625), (0.19921875, 0.9921875), (0.19921875, 0.2265625), (0.6640625, 0.9921875), (0.85546875, 0.2265625), (0.85546875, 0.9921875), (0.6640625, 0.2265625)] (
+            interpolation = "vertex"
+        )
+        texCoord2f[] primvars:vc = [(1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1)] (
+            interpolation = "vertex"
+        )
+        texCoord2f[] primvars:vc1 = [(1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1), (1, 1)] (
+            interpolation = "vertex"
+        )
+        uniform token subdivisionScheme = "none"
+        float3 xformOp:scale = (0.01, 0.01, 0.01)
+        uniform token[] xformOpOrder = ["xformOp:scale"]
+    }
+
+    def Scope "Looks"
+    {
+        def Material "MI_Building_03"
+        {
+            token outputs:mdl:surface.connect = </Root/Looks/MI_Building_03/MI_Props.outputs:out>
+
+            def Shader "MI_Props"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @../Materials/MI_Props.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "MI_Props"
+                asset inputs:AO_R_Rough_G_Metallic_B_ = @../Materials/Textures/T_Building_03_ao_r_m.png@ (
+                    colorSpace = "raw"
+                )
+                asset inputs:BaseColor = @../Materials/Textures/T_Building_03_bc.png@ (
+                    colorSpace = "sRGB"
+                )
+                float4 inputs:Color = (1, 1, 1, 0)
+                asset inputs:Normal = @../Materials/Textures/T_Building_03_n.png@ (
+                    colorSpace = "raw"
+                )
+                float inputs:RoughnessMultiplier = 1
+                token outputs:out
+            }
+        }
+    }
+}
+

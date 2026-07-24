@@ -1,0 +1,431 @@
+{
+    "version": "1.0",
+    "file_records": [
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/simple_room.usd",
+            "source_hash": "fedc1368b6c885b09ef531f9b123c109ff695c21",
+            "target_url": "./simple_room.usd",
+            "target_hash": "eb0f3d40039a92f286a8faab9237448f87a4a5d1"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/NVIDIA/Assets/Skies/Cloudy/abandoned_parking_4k.hdr",
+            "source_hash": "a205be8ddaf9aa561e1918e38ccde987af215a39",
+            "target_url": "./NVIDIA/Assets/Skies/Cloudy/abandoned_parking_4k.hdr",
+            "target_hash": "35600796359055ff4a9ba2ebd3721418ffbb4293"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Materials/Textures/DefaultMaterial_Base_Color.png",
+            "source_hash": "60c28682325faad6b95fca5fa721567062e8a877",
+            "target_url": "./Materials/Textures/DefaultMaterial_Base_Color.png",
+            "target_hash": "b8cd99c747346dce0f3506f84bcee37594c6f098"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Materials/Textures/DefaultMaterial_Mixed_AO.png",
+            "source_hash": "dd2a77f2e8f56502de91e2a16eae8fbd12222458",
+            "target_url": "./Materials/Textures/DefaultMaterial_Mixed_AO.png",
+            "target_hash": "3e9c2fc69093fafb152db0c38898b349da596278"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Materials/Textures/DefaultMaterial_Normal_DirectX.png",
+            "source_hash": "eba3e077076b95a5a84a49de7893245687935b51",
+            "target_url": "./Materials/Textures/DefaultMaterial_Normal_DirectX.png",
+            "target_hash": "8e996289bbeec33362d298c7e318f70e7cc514b5"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Materials/Textures/DefaultMaterial_Roughness.png",
+            "source_hash": "898e0a12d6ee0c90631d62a761fcabd9cdb67851",
+            "target_url": "./Materials/Textures/DefaultMaterial_Roughness.png",
+            "target_hash": "031b702cbbe9683f129590752f4df1f9f83fd30d"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Materials/Textures/Parquet_AO.png",
+            "source_hash": "f2abaa3b0c6f59f0ea0588945ac0ede654a646c5",
+            "target_url": "./Materials/Textures/Parquet_AO.png",
+            "target_hash": "7aa7e1add0e240484827abda8ae38a0c69102924"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Materials/Textures/Parquet_Color.png",
+            "source_hash": "efcec52a982d7e19b0eae2be103658dc704f2548",
+            "target_url": "./Materials/Textures/Parquet_Color.png",
+            "target_hash": "622f23d5275ecd35a2f688d9ebb9e088f5ae241b"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Materials/Textures/Parquet_Normal.png",
+            "source_hash": "24ee0245cc54180e086458272ae628a35676ce33",
+            "target_url": "./Materials/Textures/Parquet_Normal.png",
+            "target_hash": "abffcdab78e38c95825861759aa3f99c242a136b"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Materials/Textures/Parquet_Rough.png",
+            "source_hash": "ad121279fb40669f4a5187df283f11b15fbe47b0",
+            "target_url": "./Materials/Textures/Parquet_Rough.png",
+            "target_hash": "adbf56b7fdc25e7e8004f19cf5b969391108a5f2"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Materials/Textures/WallWood_Color.png",
+            "source_hash": "b8aa29159d11350cf4bbfc33ad39b38cf61f32c6",
+            "target_url": "./Materials/Textures/WallWood_Color.png",
+            "target_hash": "795b7900a397847742166d6bb7020bd974cdfc47"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Materials/Textures/WallWood_Normal.png",
+            "source_hash": "e603f34926971c08517a3452be76c54417d1eb59",
+            "target_url": "./Materials/Textures/WallWood_Normal.png",
+            "target_hash": "b21e53d44c3ba7b3046aa4443d6ff672a6e38e3f"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Materials/Textures/WallWood_Rough.png",
+            "source_hash": "a4ce35b81fb3f4e42cdbc6961ee4b9b2f4ac41b9",
+            "target_url": "./Materials/Textures/WallWood_Rough.png",
+            "target_hash": "8e66e4fa246a67496b97f06dbb7b915ec2e321a1"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Materials/Textures/WhitePlastic_Color.png",
+            "source_hash": "710e8b7944163951f68de28b47262ed0356dbe6c",
+            "target_url": "./Materials/Textures/WhitePlastic_Color.png",
+            "target_hash": "d77f0d3381b0505d5c0c7e29e5452b921d81026b"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Materials/Textures/WhitePlastic_Normal.png",
+            "source_hash": "84c9d97901faffdc1d68bb3510901f714e04866e",
+            "target_url": "./Materials/Textures/WhitePlastic_Normal.png",
+            "target_hash": "fb578153808a8289950641b209247caf687eaee3"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Materials/Textures/WhitePlastic_Rough.png",
+            "source_hash": "b7f466a867a151e289fd343426a6e4f9e933db53",
+            "target_url": "./Materials/Textures/WhitePlastic_Rough.png",
+            "target_hash": "9801421a77b117bf882a35bd256cfe1ed7ddb8d6"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/SM_Template_Map_Floor.usd",
+            "source_hash": "1ceb87461a73af6864edfb5f75b4c9c1f2a161ec",
+            "target_url": "./Props/SM_Template_Map_Floor.usd",
+            "target_hash": "5302f80c72e7f605269399000ba7307165f3c334"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_bottom.usd",
+            "source_hash": "ffed256dbda8328b4accf724a7a7cf9281ce05d8",
+            "target_url": "./Props/Towel_Room01_floor_bottom.usd",
+            "target_hash": "ebe8b5d719864b5a572fce677301d7a58cb4c83a"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_back.usd",
+            "source_hash": "e5cb2dda89609eefc632bfb2eb646f338f8c0fac",
+            "target_url": "./Props/Towel_Room01_floor_rim_back.usd",
+            "target_hash": "e2baf1cc0a2aa11eafea63a39ffd67e68e225a26"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_back001.usd",
+            "source_hash": "06e904a58de32a94af939042cc1ee2141fbf1a2c",
+            "target_url": "./Props/Towel_Room01_floor_rim_back001.usd",
+            "target_hash": "e25fe2c713e4e3289d62afe18af8c0b174905151"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_corner.usd",
+            "source_hash": "a08d4838c0eb98b0c87d1cd865de1aef3d8e60f5",
+            "target_url": "./Props/Towel_Room01_floor_rim_corner.usd",
+            "target_hash": "e89bb8ffd91277692fea68ff1302b2be1808dad6"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_corner001.usd",
+            "source_hash": "ae3ca375440a1cd01e933fb2b3c6068d4e95da32",
+            "target_url": "./Props/Towel_Room01_floor_rim_corner001.usd",
+            "target_hash": "01794748df4c999babbfa167d84765d2da5c3462"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_corner002.usd",
+            "source_hash": "1782e3f46709703212b55cb93e70c8c995efcbfd",
+            "target_url": "./Props/Towel_Room01_floor_rim_corner002.usd",
+            "target_hash": "0b61cf35dcedb41c0dab72c80ee093267bc2aaf8"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_corner003.usd",
+            "source_hash": "04ce746a3b6268c2be456c8289155d3c20988cdf",
+            "target_url": "./Props/Towel_Room01_floor_rim_corner003.usd",
+            "target_hash": "ad7bf31ee4b5377aa30f218d872025924eaea4ae"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_corner004.usd",
+            "source_hash": "637c592b7de7ec066471fd5780957be3371fc0e8",
+            "target_url": "./Props/Towel_Room01_floor_rim_corner004.usd",
+            "target_hash": "598b4ad91c53c8f4afbf5d39e77abd3c8ccd323a"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_corner005.usd",
+            "source_hash": "abc7b6f85d253ca6ea030c1f428745e07eadf769",
+            "target_url": "./Props/Towel_Room01_floor_rim_corner005.usd",
+            "target_hash": "34fc808c7ea315ddbeb7e21cd47c968132d5424f"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_corner006.usd",
+            "source_hash": "54e7cf564f3f1f5c77a20b1fde9298dd1a32d91a",
+            "target_url": "./Props/Towel_Room01_floor_rim_corner006.usd",
+            "target_hash": "172c619bc54a174fd1e891c191b9f633a6ece916"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_corner007.usd",
+            "source_hash": "d5f1885e1a7f3efb65e84b6fd795508222536758",
+            "target_url": "./Props/Towel_Room01_floor_rim_corner007.usd",
+            "target_hash": "33bf90b5d293f7fb31445f5469323eb2f6d82396"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_front_center.usd",
+            "source_hash": "a5ad95036ce2ab9eeb9ebcff6e2e4f1d24650015",
+            "target_url": "./Props/Towel_Room01_floor_rim_front_center.usd",
+            "target_hash": "2420a6e10af89acf798e3d45e46f9de8f302c7a3"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_front_center001.usd",
+            "source_hash": "41e42e7595b21f9dfcd48a06e49fafc979d1ed65",
+            "target_url": "./Props/Towel_Room01_floor_rim_front_center001.usd",
+            "target_hash": "2ae98a3d66f08eafa6330e39615a738667bcdf75"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_front_center_side.usd",
+            "source_hash": "300b3f37e944de0910899f7734f30ec50fd82eed",
+            "target_url": "./Props/Towel_Room01_floor_rim_front_center_side.usd",
+            "target_hash": "5c88408d1e5db932d2fd3374ad481f8c87bf26cd"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_front_center_side001.usd",
+            "source_hash": "f15671550ea1ab306c0fc1cb48f433ed572b91e9",
+            "target_url": "./Props/Towel_Room01_floor_rim_front_center_side001.usd",
+            "target_hash": "32e257a1e11f9a6c6a2c39a62c39ca2cd2626cce"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_front_center_side002.usd",
+            "source_hash": "f3f3516cfdaa739ac4ce73dbeaf097ccb6ff3b73",
+            "target_url": "./Props/Towel_Room01_floor_rim_front_center_side002.usd",
+            "target_hash": "092f12511a5123010ea0e79b5aa8d8a1b5093a8d"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_front_center_side003.usd",
+            "source_hash": "c9abe1fc97b88f369cc3d2a1b71e6055f558d934",
+            "target_url": "./Props/Towel_Room01_floor_rim_front_center_side003.usd",
+            "target_hash": "c65f9c318061ecdf6909f81a445c1191086d1647"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_side.usd",
+            "source_hash": "4a42b6302a57d25c88b35a2009382989c9215c83",
+            "target_url": "./Props/Towel_Room01_floor_rim_side.usd",
+            "target_hash": "e09f5fbbd4011286c2d9f08653a746e90baae225"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_side001.usd",
+            "source_hash": "ccdaf6156d9a050330b1de051c7045797e01f32d",
+            "target_url": "./Props/Towel_Room01_floor_rim_side001.usd",
+            "target_hash": "d880586eed859a8f6f8502afedb545eff7ea5a65"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_side002.usd",
+            "source_hash": "6a448d3e84d52421f7719be5e229cecb5e7b4bc4",
+            "target_url": "./Props/Towel_Room01_floor_rim_side002.usd",
+            "target_hash": "d9e68a070ad58ae974e46d7db24008505d0a6e52"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_rim_side003.usd",
+            "source_hash": "1685dc66710c63499e33e09d57d2d76a60e5d8bc",
+            "target_url": "./Props/Towel_Room01_floor_rim_side003.usd",
+            "target_hash": "161955700dfdb89c09322a27e62c53eeda3d4e79"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_floor_top.usd",
+            "source_hash": "80e004ed61421b834a4fe90c7e8d2a42c3a02ce6",
+            "target_url": "./Props/Towel_Room01_floor_top.usd",
+            "target_hash": "edbfc41ef7e3bca64929a4800db54c350834775f"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_florr_edge.usd",
+            "source_hash": "7e4c616b522ad49868241d13bb99e469f7d86256",
+            "target_url": "./Props/Towel_Room01_florr_edge.usd",
+            "target_hash": "814fe6d302d5488934ba13a851d60363f2a26221"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_florr_edge001.usd",
+            "source_hash": "082a9b6b39e34a5dbec998fde7ff07c4d2b40af3",
+            "target_url": "./Props/Towel_Room01_florr_edge001.usd",
+            "target_hash": "adab127bb1d825fcee7cb4b8f48d501201514df8"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_lamp.usd",
+            "source_hash": "db4fb9e59566e6918cd60e937e90adcd68d5f005",
+            "target_url": "./Props/Towel_Room01_lamp.usd",
+            "target_hash": "e2c0cd10bf8e9328a544d22120bc7ae0988a8e2d"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_lamp_frame.usd",
+            "source_hash": "466c132dbdc0d4ea882d7489e28c2c4a7a81dd8e",
+            "target_url": "./Props/Towel_Room01_lamp_frame.usd",
+            "target_hash": "39953847dcc4f91044d74a9ccd2fbc6d07e1224a"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wall_back.usd",
+            "source_hash": "cc65530ba7807d6def490690e25f791f9db170fc",
+            "target_url": "./Props/Towel_Room01_wall_back.usd",
+            "target_hash": "f9d63d5f34d67c70625483825f70b7696fd9078f"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wall_back001.usd",
+            "source_hash": "a4f1bca28a625ca38603ba8971874a492fd847b1",
+            "target_url": "./Props/Towel_Room01_wall_back001.usd",
+            "target_hash": "cc0c744041f6027d3833244bfbd80528b050740b"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wall_corner.usd",
+            "source_hash": "6bb311c574dc7896f9948695719ded781293cbfe",
+            "target_url": "./Props/Towel_Room01_wall_corner.usd",
+            "target_hash": "450a9cfa51787797d76789448c5685e0c1d89d7d"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wall_corner001.usd",
+            "source_hash": "0a059f950322080926910d684acab65862e2ca31",
+            "target_url": "./Props/Towel_Room01_wall_corner001.usd",
+            "target_hash": "0b2d5081c8f0f406c56f582b1044c0b3447a06d4"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wall_corner002.usd",
+            "source_hash": "be66e201c53c4257b3d82b4a8eb5ee911c5238e8",
+            "target_url": "./Props/Towel_Room01_wall_corner002.usd",
+            "target_hash": "7baee0d5b137777de0dba6f87e18cea5bf7ea427"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wall_corner003.usd",
+            "source_hash": "a33d13b27e7870b3e81f4e4d8194b49daae28121",
+            "target_url": "./Props/Towel_Room01_wall_corner003.usd",
+            "target_hash": "bf213f169c028b7e8a51baa1895d7442b2a1faee"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wall_side.usd",
+            "source_hash": "936b579e9b757dbccd34e5fd427d8a59216de2a5",
+            "target_url": "./Props/Towel_Room01_wall_side.usd",
+            "target_hash": "c195eb07ba8b5808bc3a81f1ecc91749e2b701ba"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wall_side001.usd",
+            "source_hash": "579dad269c877175912629c809a07e0e9ceaacc4",
+            "target_url": "./Props/Towel_Room01_wall_side001.usd",
+            "target_hash": "60a7e871398e1ca13c63724bbd4e816ff2d6522c"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_window.usd",
+            "source_hash": "2855e1746a5b33b616e57838b1903b3d20505b9d",
+            "target_url": "./Props/Towel_Room01_window.usd",
+            "target_hash": "777e6587758e56ca5cce11d4ef9a5ee1fa9486c4"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_window1.usd",
+            "source_hash": "b3c74fc7b02c6faf2b927ee7fa6597a5c646a5e7",
+            "target_url": "./Props/Towel_Room01_window1.usd",
+            "target_hash": "a713e1bd75680c6a7ff9b1913d14e3053129a6b5"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_window_frame_bottom001.usd",
+            "source_hash": "970e5d75624d5bd31677fddbd69d4cf6533aaf4e",
+            "target_url": "./Props/Towel_Room01_window_frame_bottom001.usd",
+            "target_hash": "a5e1742b60e81db63f02043dc2836d2d106bae8f"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_window_frame_bottom002.usd",
+            "source_hash": "55bf5f1ab41a83a53e6d1a3d7424574821238b77",
+            "target_url": "./Props/Towel_Room01_window_frame_bottom002.usd",
+            "target_hash": "cfa91066eceb8b17b9b1c202b921669a7b00feb7"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_window_frame_corner002.usd",
+            "source_hash": "1bec45d5f230c0ba30cab3a5a609cbfa47decd05",
+            "target_url": "./Props/Towel_Room01_window_frame_corner002.usd",
+            "target_hash": "6fa07df79ba6bf63a35358b26ae82de8dc33c88f"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_window_frame_corner004.usd",
+            "source_hash": "1c81b2c7b19ec432a1b642135ce9388b0acf89a8",
+            "target_url": "./Props/Towel_Room01_window_frame_corner004.usd",
+            "target_hash": "ee93d01c32a4ee1ea0b8adbb32a6e265b1c06d76"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_window_frame_corner005.usd",
+            "source_hash": "dbf66872e363d576e3f5072e6e52953d27e5c4cb",
+            "target_url": "./Props/Towel_Room01_window_frame_corner005.usd",
+            "target_hash": "a01d56668eab2b08a9e171f12c7889d6211d869e"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_window_frame_corner006.usd",
+            "source_hash": "931f924775e1cebd4b6a02ca2c878cee361a3e81",
+            "target_url": "./Props/Towel_Room01_window_frame_corner006.usd",
+            "target_hash": "3c9166b4a86aaca6438fa3b483a7e6cd9f694621"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_window_frame_side001.usd",
+            "source_hash": "040293769db9fab6b9e8dde3124d4eddeca11480",
+            "target_url": "./Props/Towel_Room01_window_frame_side001.usd",
+            "target_hash": "131b3014d32d5867eecd5006fbddb0a2778636f5"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_window_frame_side002.usd",
+            "source_hash": "060d84f117ba3b8cdeb96a39226b7f2851281fb9",
+            "target_url": "./Props/Towel_Room01_window_frame_side002.usd",
+            "target_hash": "9f91811179314edf04c64c2e2874fc23e3b421c9"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wood_wall_008.usd",
+            "source_hash": "31c2e8205cf8251de494c33d25076767cc4d3200",
+            "target_url": "./Props/Towel_Room01_wood_wall_008.usd",
+            "target_hash": "b263bafeb80d190c3a86b759b3bc187f6e51610c"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wood_wall_009.usd",
+            "source_hash": "9d20d1bc08012840a93bc65898a3535417603bbd",
+            "target_url": "./Props/Towel_Room01_wood_wall_009.usd",
+            "target_hash": "c841ccb954fa03f603ed6e10c65ac6d93184faf0"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wood_wall_1.usd",
+            "source_hash": "cb5e0c71799413d94f648d54e947739d6c8c2f84",
+            "target_url": "./Props/Towel_Room01_wood_wall_1.usd",
+            "target_hash": "79f3c1997314dc194adeadbb9854e8accfddb0f9"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wood_wall_2.usd",
+            "source_hash": "af657aeb7f13ca27d832a9eb9e473cf2dd2f0604",
+            "target_url": "./Props/Towel_Room01_wood_wall_2.usd",
+            "target_hash": "16bd4dd058a672930f48f5eda1bcbd4853fb3bc9"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wood_wall_3.usd",
+            "source_hash": "5d9083cced0128b8a9109e1e1815edada81da022",
+            "target_url": "./Props/Towel_Room01_wood_wall_3.usd",
+            "target_hash": "a1d9583ffae13a57dd8c49dbd485e064b472cc14"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wood_wall_4.usd",
+            "source_hash": "a86181397e811280d3e6b21681e31f020b6ef6da",
+            "target_url": "./Props/Towel_Room01_wood_wall_4.usd",
+            "target_hash": "770cc810d14d25aa8cb30fcb63a60bb7c7628b63"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wood_wall_5.usd",
+            "source_hash": "44735d4ce2fb5298b5921955f8424c62b166aaa3",
+            "target_url": "./Props/Towel_Room01_wood_wall_5.usd",
+            "target_hash": "a7f4f23ef00b9c3c8755c3510885d7f309a512b0"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wood_wall_6.usd",
+            "source_hash": "cf09af4d5a2a6380430b29a9ab47f81993c9a716",
+            "target_url": "./Props/Towel_Room01_wood_wall_6.usd",
+            "target_hash": "cda5fc5a24b4edafe09781c49442f00fdcf36d0b"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/Towel_Room01_wood_wall_7.usd",
+            "source_hash": "0fa2661f0e48b470942de37b3fef1f6b90ac17e3",
+            "target_url": "./Props/Towel_Room01_wood_wall_7.usd",
+            "target_hash": "5ea851996e567833f0df60cebd768ff56281df4d"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.0/Isaac/Environments/Simple_Room/Props/table_low.usd",
+            "source_hash": "a5d24e885738a8eef5bc75c3db3beb55f50b7590",
+            "target_url": "./Props/table_low.usd",
+            "target_hash": "9a15970ac0b970ed0afe1f89b7e0ef7a5a7c6682"
+        }
+    ]
+}
