@@ -1,0 +1,52 @@
+# COCO detection/segmentation validation run (20 frames).
+# Same scene/DR as example.yaml; only the writer differs (format: coco).
+# Needs rgb + instance_segmentation (for polygons) or at least bbox_2d.
+
+run:
+  name: coco20
+  num_frames: 20
+  seed: 42
+  headless: true
+  output_dir: datasets/coco20
+
+scene:
+  builder: default
+  background: none
+  ground_plane: true
+
+objects:
+  - obj_id: obj_000
+    count: 1
+    physics: {collider: true, gravity: true, mass: null}
+    semantic: {class: obj_000}
+
+randomizers:
+  - {type: lighting,    intensity: [300, 900], color_temperature: [3000, 6500],
+     hdri: assets/env/hdri, hdri_rotate: true,
+     fixtures: {kinds: [rect, distant], count: [0, 2], intensity: [400, 2000],
+                color_temperature: [3000, 6500], distance: [2.0, 5.0], elevation_deg: [35, 85], size: [0.5, 2.0]}}
+  - {type: materials,   target: objects, roughness: [0.1, 0.9], metallic: [0.0, 0.6], base_color: hsv_jitter}
+  - {type: materials,   target: ground, textures: assets/textures/ground, texture_prob: 0.9, texture_scale: [0.7, 3.0], base_color: hsv_jitter}
+  - {type: pose,        target: objects, position: {x: [-0.2, 0.2], y: [-0.2, 0.2], z: [0.0, 0.1]}, rotation: uniform_so3}
+  - {type: camera,      mode: look_at, distance: [0.6, 2.0], elevation_deg: [20, 80], azimuth_deg: [-180, 180]}
+  - {type: distractors, pool: [], count: [0, 3]}
+
+sensors:
+  - name: cam0
+    type: ideal
+    resolution: [1280, 720]
+    intrinsics: {fx: 952.2, fy: 952.2, cx: 640.0, cy: 360.0}
+
+annotators:
+  rgb: true
+  depth: false
+  semantic_segmentation: false
+  instance_segmentation: true      # -> COCO segmentation polygons
+  bbox_2d: true
+  bbox_3d: false
+  pose_6d: false
+
+writer:
+  format: coco
+  split: train                     # -> annotations/instances_train.json
+  segmentation: true               # emit polygons (needs instance_segmentation above)

@@ -28,7 +28,7 @@ config/example.yaml
 run_sdg.py  ── app.py(SimulationApp 6.0.1) ── 프레임 루프:
    ┌─────────────────────────────────────────────────────────────┐
    │ 1) scene      : 배경/ground/obj(들) spawn, semantic label 부여 │
-   │ 2) randomizers: 매 프레임 조명/재질/pose/카메라/distractor 변형  │
+   │ 2) randomizers: 조명/재질/pose/카메라/distractor/occluder 변형   │
    │ 3) sensors    : 카메라 render product (ideal + 옵션 depth 열화)  │
    │ 4) annotators : RGB/depth/seg/bbox/normal/keypoint/pose GT 수집  │
    │ 5) writers    : 지정 포맷으로 디스크 기록 (generic / BOP / ...)  │
@@ -66,10 +66,11 @@ scene:
 objects:                      # 객체는 obj_id 로만 참조 (특정명 하드코딩 X)
   - obj_id: obj_000           # assets/obj/obj_000/ 에서 로드
     count: 1
-    physics: {collider: true, gravity: true, mass: null}
+    physics: {collider: true, gravity: false, mass: null}   # gravity:false 면 pose 가 배치를 지배
     semantic: {class: obj_000}
-    # origin: [x,y,z]  또는 {keypoint: i}   # (옵션) pose_6d 원점을 object-local 점으로 재정의
-    #                                        # (관측 표면 정렬용; consumer CAD 도 동일 원점). 기본=asset 원점.
+    # origin: bottom|top|center | {face: bottom} | [x,y,z] | {keypoint: i}   # (옵션) pose_6d 원점
+    #   재정의 + 실제 배치 원점까지 지배(파묻힘 방지). face/bottom 등은 스폰 prim 의 bbox+stage up-axis 로
+    #   자동 계산(객체 무종속). 관측 표면 정렬용; consumer CAD 도 동일 원점. 기본=asset 원점.
     # part-level mask 는 assets/obj/<obj_id>/parts.json 로 서브프림에 semantic class 부여(전용 asset 파일).
 
 randomizers:                  # 순서대로 매 프레임 적용
@@ -79,9 +80,14 @@ randomizers:                  # 순서대로 매 프레임 적용
   #   텍스처 이미지는 UV 필요 → UV 없는 STL 은 project_uvw(world planar)라 ground/평면엔 깨끗,
   #   오브젝트 수직면엔 smear. 그래서 오브젝트는 색/roughness/metallic 랜덤화가 실질 경로.
   - {type: materials,  target: all, roughness: [0.1, 0.9], metallic: [0.0, 0.6], base_color: hsv_jitter}
+  # pose rotation: none | yaw(=z_only, 직립 유지·origin:bottom 과 짝) | uniform_euler | uniform_so3
   - {type: pose,       target: objects, position: {x: [-0.2,0.2], y: [-0.2,0.2], z: [0,0.1]}, rotation: uniform_so3}
   - {type: camera,     mode: look_at, distance: [0.6, 2.0], elevation_deg: [20, 80], azimuth_deg: [-180,180]}
-  - {type: distractors, pool: [], count: [0, 3]}     # 유사/이질 객체 (비면 없음)
+  # occluder: 카메라-타깃 시선 위 배치로 부분 가림 보장(distractor 와 달리). MUST come after pose+camera.
+  #   pool=제네릭 도형(prim:cube/sphere/cylinder/cone/capsule)|obj_id|usd. 실제 가림은 visib_fract(GT),
+  #   occlusion_frac 은 바이어스. target_region:<part class> 로 특정 부위(예 flange) 부분가림.
+  - {type: occluder,   pool: [prim:cube, prim:cylinder], count: [0, 2], occlusion_frac: [0.15, 0.45]}
+  - {type: distractors, pool: [], count: [0, 3]}     # 유사/이질 객체 clutter (비면 없음; 가림 보장 X)
 
 sensors:
   - name: cam0
@@ -171,12 +177,12 @@ keypoints/pose 축을 그려 `<dataset>/qa/` 에 저장. Isaac 불필요(번들 
 |---|---|---|
 | **S0 스캐폴딩** | 폴더·문서·config/registry/writer 골격(순수 파이썬) | ✅ |
 | **S1 6.0.1 API** | Replicator/센서 API 델타 조사, `app`·`scene`·`sensors`·`annotators`·`run_sdg` 구현 | ✅ smoke 렌더 검증 |
-| **S2 MVP** | obj 1개 + 기본 DR + RGB/depth/seg/pose + generic writer | ⬜ 실 오브젝트 USD 필요 |
-| **S3 확장** | randomizer/센서/writer 포맷 추가, distractor·keypoint·bbox3d | ✅ materials·distractors·keypoint·bbox_3d·**BOP·COCO·YOLO writer** 완료 |
+| **S2 MVP** | obj 1개 + 기본 DR + RGB/depth/seg/pose + generic writer | ✅ obj_000(웨이퍼 카세트 CAD→USD) example.yaml 렌더·라벨·6D pose·QA 검증 |
+| **S3 확장** | randomizer/센서/writer 포맷 추가, distractor·occluder·keypoint·bbox3d | ✅ materials·distractors·**occluder**·keypoint·bbox_3d·**BOP·COCO·YOLO writer** 완료 |
 | **S4 preset** | real-sensor 열화, amodal mask, QA 시각화 | ✅ realsense_depth·amodal·`tools/visualize.py` 완료 |
 
-**진행**: S1·S3·S4 완료(검증 포함). 남은 것은 **S2**(실제 오브젝트 USD 배치 후 대량 생성)뿐.
-세부 상태·다음 작업은 `CLAUDE.md` "현재 상태" 참조.
+**진행**: S1~S4 전부 구현·검증 완료. 프레임워크는 대량 생성 준비 상태 — 남은 것은 *생성/확장*
+(대량 생성, part-level·keypoints 정의, stereo pair 출력 등). 세부 상태·다음 작업은 `CLAUDE.md` "현재 상태" 참조.
 
 ---
 

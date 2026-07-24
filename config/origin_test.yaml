@@ -1,0 +1,50 @@
+# Origin-redefinition test — object sits ON the ground (bottom face = pose origin).
+# Demonstrates objects[].origin: bottom (auto-computed from the object's bbox).
+run:
+  name: origin_test
+  num_frames: 4
+  seed: 42
+  headless: true
+  output_dir: datasets/origin_test
+
+scene:
+  builder: default
+  background: none
+  ground_plane: true
+
+objects:
+  - obj_id: obj_000
+    count: 1
+    physics: {collider: true, gravity: false, mass: null}   # gravity off: pose controls placement
+    semantic: {class: obj_000}
+    origin: bottom          # <-- pose origin = bottom-face centre (auto from bbox); also un-buries
+
+randomizers:
+  - {type: lighting, intensity: [500, 900], color_temperature: [4000, 6000]}
+  - {type: materials, target: objects, roughness: [0.3, 0.7], metallic: [0.0, 0.3], base_color: hsv_jitter}
+  # origin:bottom + z:0 + rotation:yaw -> object rests on the ground (z=0) while its heading
+  # spins about the vertical (Z) axis: upright, never buried, orientation varies.
+  - {type: pose, target: objects, position: {x: [-0.1, 0.1], y: [-0.1, 0.1], z: [0.0, 0.0]}, rotation: yaw}
+  - {type: camera, mode: look_at, distance: [0.6, 1.2], elevation_deg: [15, 45], azimuth_deg: [-180, 180]}
+
+sensors:
+  - name: cam0
+    type: ideal
+    resolution: [1280, 720]
+    intrinsics: {hfov_deg: 69}
+
+annotators:
+  rgb: true
+  depth: true
+  semantic_segmentation: true
+  instance_segmentation: true
+  bbox_2d: true
+  bbox_3d: true
+  normals: false
+  keypoints: []
+  pose_6d: true
+
+writer:
+  format: generic
+  depth_png_bits: 16
+  mask_binary: true

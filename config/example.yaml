@@ -16,8 +16,9 @@ scene:
 objects:
   - obj_id: obj_000         # loads from assets/obj/obj_000/
     count: 1
-    physics: {collider: true, gravity: true, mass: null}
+    physics: {collider: true, gravity: false, mass: null}   # gravity off: pose controls placement
     semantic: {class: obj_000}
+    origin: bottom          # pose origin = bottom-face centre (auto from bbox); rests on ground
 
 randomizers:
   # lighting: 3 layers — dome ambient (intensity; keep lo>0 so never fully dark) + blackbody
@@ -35,8 +36,18 @@ randomizers:
   #   background. Randomize it across a realistic floor library (wood/stone/tile/gravel...),
   #   localized offline by tools/fetch_isaac_assets.py -> assets/textures/ground/.
   - {type: materials,   target: ground, textures: assets/textures/ground, texture_prob: 0.9, texture_scale: [0.7, 3.0], base_color: hsv_jitter}
-  - {type: pose,        target: objects, position: {x: [-0.2, 0.2], y: [-0.2, 0.2], z: [0.0, 0.1]}, rotation: uniform_so3}
+  # origin:bottom + z:0 + rotation:yaw -> object rests on the ground (z=0), upright, heading varies.
+  - {type: pose,        target: objects, position: {x: [-0.2, 0.2], y: [-0.2, 0.2], z: [0.0, 0.0]}, rotation: yaw}
   - {type: camera,      mode: look_at, distance: [0.6, 2.0], elevation_deg: [20, 80], azimuth_deg: [-180, 180]}
+  # occluder: places clutter ON the camera->target ray -> GUARANTEED partial occlusion (unlike
+  #   distractors, which scatter and may not cover). MUST come after pose+camera (reads this
+  #   frame's target/camera positions). count lo=0 leaves some frames fully visible (diversity);
+  #   occlusion_frac biases coverage, the true amount is visib_fract GT. Real occlusion GT needs
+  #   writer.format:bop + annotators.amodal:true; the generic writer still bakes occlusion into
+  #   the visible masks. Add an obj_id / usd to the pool (or an adjacent obj) for realistic
+  #   occluders + similar-instance hard-negatives; target_region:<part class> stresses a part.
+  # (occluder 원치 않으면 occluder 줄을 빼거나 count: [0,0]).
+  - {type: occluder,    pool: [prim:cube, prim:cylinder, prim:sphere], count: [0, 2], occlusion_frac: [0.15, 0.45], jitter: 0.6}
   - {type: distractors, pool: [], count: [0, 3]}
 
 sensors:

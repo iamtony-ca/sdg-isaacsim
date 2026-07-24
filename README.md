@@ -10,7 +10,8 @@ config·plugin 구동. 설계는 [`SDG.md`](SDG.md), 세션 컨텍스트·원칙
   `randomizers`/`run_sdg` 실제 구현. `config/smoke.yaml`(오브젝트 없이 ground+dome)로 **headless 3프레임
   렌더 검증 완료** — RGB/16-bit depth(mm)/semantic + meta(intrinsics·metric camera pose)·dataset.json 생성.
 - ✅ **S3**: **구현·검증 완료** — `materials`(오브젝트별 OmniPBR: roughness/metallic/색 매 프레임),
-  `distractors`(풀에서 1~N개 clutter spawn·scatter·라벨링), **keypoint annotator**(obj-local 3D → 2D 투영+가시성,
+  `distractors`(풀에서 1~N개 clutter spawn·scatter·라벨링), `occluder`(카메라-타깃 시선 위 배치로 **부분
+  가림 보장** — visib_fract GT; `config/occluder_test.yaml`), **keypoint annotator**(obj-local 3D → 2D 투영+가시성,
   `keypoints.json`), **bbox_3d writer 필드**(extents·transform·camera-frame corners·2D 투영·occlusion),
   그리고 **writer 3종**: `bop`(scene_camera/scene_gt/scene_gt_info + rgb/depth/mask, model→cam OpenCV mm),
   `coco`(instances_json: bbox·area·segmentation), `yolo`(정규화 label + data.yaml).
@@ -36,6 +37,12 @@ config·plugin 구동. 설계는 [`SDG.md`](SDG.md), 세션 컨텍스트·원칙
 /isaac-sim/python.sh sdg/run_sdg.py --config config/example.yaml --headless
 ```
 > 이 컨테이너엔 시스템 `python3` 가 없다 — 항상 번들 `/isaac-sim/python.sh` 로 실행.
+
+> **처음 배운다면**: SDG가 무슨 데이터를 만드는지·각 채널이 어느 파일에 나오는지 개념 정리는
+> [`introduction.md`](introduction.md).
+>
+> **대량 생성 전 20장 검증**: 각 포맷(generic/bop/coco/yolo)을 소량으로 먼저 돌려보는 복붙 튜토리얼은
+> [`quick_start.md`](quick_start.md). 프레임 수는 `--frames <N>` 로 오버라이드.
 
 ## 구조 (요약)
 ```

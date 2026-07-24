@@ -192,7 +192,8 @@ class FrameCollector:
         inst_annot = self._annots["instance_segmentation"]
         obj_prims = [inst["prim"] for inst in scene.instances]
         bg_prims = [stage.GetPrimAtPath(f"{scene.world_path}/GroundPlane"),
-                    stage.GetPrimAtPath(f"{scene.world_path}/Distractors")]
+                    stage.GetPrimAtPath(f"{scene.world_path}/Distractors"),
+                    stage.GetPrimAtPath(f"{scene.world_path}/Occluders")]
         bg_prims = [p for p in bg_prims if p and p.IsValid()]
         by_id = {o["instance_id"]: o for o in frame.get("objects", [])}
 

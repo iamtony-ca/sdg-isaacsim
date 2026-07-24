@@ -60,7 +60,6 @@ class DefaultSceneBuilder(SceneBuilder):
         usd_path = self.resolve_asset_usd(spec.obj_id)
         semantic_class = spec.semantic.get("class", spec.obj_id)
         keypoints_local = self.load_keypoints(spec.obj_id)  # object-local 3D kpts or None
-        origin_local = self.resolve_origin(spec.origin, keypoints_local)  # pose origin or None
         part_defs = self.load_parts(spec.obj_id)            # sub-prim semantic parts or []
         paths: List[str] = []
 
@@ -73,6 +72,15 @@ class DefaultSceneBuilder(SceneBuilder):
                 semantics={"class": semantic_class},
             )
             prim_path = str(prim.GetPath())
+            # pose origin (object-local). Face keywords (bottom/top/center) are resolved from
+            # THIS prim's actual bbox — object-agnostic, works for any mesh (principle 2).
+            origin_local = self._resolve_origin_for_prim(prim, spec.origin, keypoints_local)
+            # World-metre offset of the origin point from the prim's placement origin, measured
+            # at spawn (identity pose). The pose randomizer rotates this by the frame rotation
+            # and subtracts it so the origin point (not the bbox centre) lands at the commanded
+            # position — un-buries the object. origin_local itself stays in mesh units for the
+            # GT re-projection in collector.py (which maps via get_world_transform incl. scale).
+            origin_offset = self._origin_world_offset(rep, prim, origin_local)
             self._apply_physics(rep, prim, spec.physics)
             parts = self._label_parts(rep, prim_path, part_defs)  # semantics on sub-prims
             paths.append(prim_path)
@@ -85,10 +93,63 @@ class DefaultSceneBuilder(SceneBuilder):
                     "semantic_class": semantic_class,
                     "keypoints_local": keypoints_local,
                     "origin_local": origin_local,
+                    "origin_offset": origin_offset,  # world-metre offset for placement (or None)
                     "parts": parts,  # [{name, class, prim_path}] labelled sub-prims
                 }
             )
         self.object_prims[spec.obj_id] = paths
+
+    def _resolve_origin_for_prim(self, prim, origin_spec, keypoints_local):
+        """Resolve `objects[].origin` to an object-local point (or None).
+
+        Face keywords — 'bottom' | 'top' | 'center' (or {face: bottom}) — are computed from
+        the spawned prim's own bbox along the stage up-axis, so the same config works for any
+        object regardless of its dimensions. Everything else (explicit [x,y,z] or
+        {keypoint: i}) is delegated to SceneBuilder.resolve_origin.
+        """
+        face = None
+        if isinstance(origin_spec, str):
+            face = origin_spec.lower()
+        elif isinstance(origin_spec, dict) and "face" in origin_spec:
+            face = str(origin_spec["face"]).lower()
+        if face is None:
+            return self.resolve_origin(origin_spec, keypoints_local)
+
+        from pxr import Usd, UsdGeom
+
+        cache = UsdGeom.BBoxCache(Usd.TimeCode.Default(),
+                                 [UsdGeom.Tokens.default_, UsdGeom.Tokens.render])
+        rng = cache.ComputeUntransformedBound(prim).ComputeAlignedRange()
+        lo, hi = rng.GetMin(), rng.GetMax()
+        o = [(lo[i] + hi[i]) * 0.5 for i in range(3)]           # bbox centre
+        up = UsdGeom.GetStageUpAxis(prim.GetStage())
+        comp = 1 if up == UsdGeom.Tokens.y else 2               # Isaac default is Z-up
+        if face in ("bottom", "min"):
+            o[comp] = lo[comp]
+        elif face in ("top", "max"):
+            o[comp] = hi[comp]
+        elif face in ("center", "centre"):
+            pass
+        else:
+            raise ValueError(f"unsupported origin '{face}' (use bottom|top|center, "
+                             f"[x,y,z], or {{keypoint: i}})")
+        return [float(v) for v in o]
+
+    @staticmethod
+    def _origin_world_offset(rep, prim, origin_local):
+        """World-metre vector from the prim's placement origin to the origin point, at the
+        prim's spawn (identity) pose. Computed from the actual world transform so it is
+        unit-correct regardless of any modeling scale baked into the asset. None if no origin."""
+        if origin_local is None:
+            return None
+        from pxr import Gf
+
+        M = rep.functional.utils.get_world_transform(prim).GetMatrix()  # row-vector local->world
+        p_origin = M.ExtractTranslation()                              # prim origin in world
+        p_point = M.Transform(Gf.Vec3d(float(origin_local[0]), float(origin_local[1]),
+                                       float(origin_local[2])))         # origin point in world
+        d = p_point - p_origin
+        return [float(d[0]), float(d[1]), float(d[2])]
 
     def _label_parts(self, rep, prim_path: str, part_defs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Apply each part's semantic class to its sub-prim so it shows up as a separate mask

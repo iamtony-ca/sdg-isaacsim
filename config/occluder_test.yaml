@@ -1,0 +1,53 @@
+# Occluder validation — a guaranteed partial occluder is placed on the camera->target ray
+# each frame; BOP writer + amodal record the true visib_fract (px_visib/px_all). Expect
+# visib_fract < 1.0 on occluded frames (partial), not 0 (fully hidden) nor 1 (unoccluded).
+run:
+  name: occluder_test
+  num_frames: 8
+  seed: 7
+  headless: true
+  output_dir: datasets/occluder_test
+
+scene:
+  builder: default
+  background: none
+  ground_plane: true
+
+objects:
+  - obj_id: obj_000
+    count: 1
+    physics: {collider: true, gravity: false, mass: null}
+    semantic: {class: obj_000}
+    origin: bottom
+
+randomizers:
+  - {type: lighting, intensity: [500, 900], color_temperature: [4000, 6000]}
+  - {type: pose, target: objects, position: {x: [-0.05, 0.05], y: [-0.05, 0.05], z: [0.0, 0.0]}, rotation: yaw}
+  - {type: camera, mode: look_at, distance: [0.8, 1.4], elevation_deg: [20, 50], azimuth_deg: [-180, 180]}
+  # occluder MUST come after camera+pose so this frame's camera/target positions are set.
+  # count [1,1] here so exactly one occluder per frame (clean visib_fract read for validation);
+  # use [0,2] in real datasets so some frames stay fully visible (needed for training diversity).
+  - {type: occluder, pool: [prim:cube, prim:cylinder, obj_000], count: [1, 1],
+     occlusion_frac: [0.2, 0.5], jitter: 0.6, semantic_class: occluder}
+
+sensors:
+  - name: cam0
+    type: ideal
+    resolution: [1280, 720]
+    intrinsics: {hfov_deg: 69}
+
+annotators:
+  rgb: true
+  depth: true
+  semantic_segmentation: false
+  instance_segmentation: true
+  bbox_2d: true
+  bbox_3d: false
+  normals: false
+  keypoints: []
+  pose_6d: true
+  amodal: true            # -> mask/=amodal, mask_visib/=visible, real visib_fract in scene_gt_info
+
+writer:
+  format: bop
+  depth_png_bits: 16

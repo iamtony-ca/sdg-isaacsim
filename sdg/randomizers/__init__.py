@@ -5,4 +5,4 @@ only inside apply()/setup(), so importing the package is safe without the simula
 (registration is import-time; Isaac use is call-time).
 """
 from . import base  # noqa: F401
-from . import lighting, pose, camera, materials, distractors, background  # noqa: F401
+from . import lighting, pose, camera, materials, distractors, background, occluder  # noqa: F401

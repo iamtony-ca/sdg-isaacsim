@@ -7,6 +7,8 @@ Serializes whatever channels are present in the normalized Frame dict (see base.
       depth/000000.png          16-bit PNG, millimetres
       semantic/000000.png       16-bit class id map
       instance/000000.png       16-bit instance id map
+      normal/000000.png         8-bit RGB per-pixel surface normal map (encoded n*0.5+0.5,
+                                decode: n = png/255*2 - 1; background/no-geometry ~= grey 128)
       meta/000000.json          intrinsics, camera_pose_world, per-object 6D pose/bbox/kpts
       dataset.json              cameras, classes, obj_ids, frame count, config pointer
 
@@ -34,10 +36,12 @@ def _save_png(path: str, array: "np.ndarray") -> None:
     Image.fromarray(array).save(path)
 
 
+
+
 @register("writer", "generic")
 class GenericWriter(Writer):
     def open(self) -> None:
-        for sub in ("rgb", "depth", "semantic", "instance", "meta"):
+        for sub in ("rgb", "depth", "semantic", "instance", "normal", "meta"):
             os.makedirs(os.path.join(self.output_dir, sub), exist_ok=True)
         self._classes: Dict[str, int] = {}
         self._obj_ids = set()
@@ -63,6 +67,14 @@ class GenericWriter(Writer):
         if "instance" in frame:
             _save_png(os.path.join(self.output_dir, "instance", stem + ".png"),
                       np.asarray(frame["instance"], dtype=np.uint16))
+
+        if "normals" in frame:
+            # Per-pixel unit normals in [-1, 1] -> 8-bit RGB PNG via the standard normal-map
+            # encoding n*0.5+0.5 (viewable directly; decode with n = png/255*2 - 1).
+            # Background pixels (no geometry) come back ~0 -> mid-grey (128,128,128).
+            n = np.asarray(frame["normals"], dtype=np.float32)[..., :3]
+            n_enc = np.clip((n * 0.5 + 0.5) * 255.0, 0, 255).astype(np.uint8)
+            _save_png(os.path.join(self.output_dir, "normal", stem + ".png"), n_enc)
 
         meta = {
             "frame_id": fid,
