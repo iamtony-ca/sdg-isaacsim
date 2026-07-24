@@ -120,6 +120,57 @@ writer:
 
 ---
 
+## 2.1 랜덤화 인벤토리 (현재 상태 — 단일 출처)
+
+**등록된 randomizer = 7종** (`sdg/randomizers/__init__.py`; `registry.available("randomizer")` 로 확인).
+전부 구현·검증 완료. config `randomizers[]` 에 **나열된 순서대로 매 프레임 적용**되므로 순서가 의미를 가진다
+(특히 occluder 는 camera·pose **뒤**여야 그 프레임의 카메라/타깃 위치를 읽어 배치한다).
+
+| # | `type` | 무엇을 랜덤화 | 주요 config 키 | 서브모드 / 비고 |
+|---|---|---|---|---|
+| 1 | **lighting** | dome 앰비언트 밝기 + blackbody 색온도 + overhead fixture(방향광·실제 그림자) + HDRI 환경맵 | `intensity`, `color_temperature`, `hdri`, `hdri_rotate`, `fixtures{kinds:[rect,distant],count,intensity,color_temperature,distance,elevation_deg,size}` | **HDRI 15종**(로컬 dir 오프라인/`isaac_skies` 온라인), fixture kinds **2**(rect·distant) |
+| 2 | **materials** | 대상 표면의 색·거칠기·금속성·텍스처 | `target`, `roughness`, `metallic`, `base_color`, `textures`, `texture_prob`, `texture_scale` | `target: objects\|ground\|all`. `base_color: hsv_jitter\|none`. UV 없는 mesh 는 project_uvw(평면엔 OK, 수직면 smear) |
+| 3 | **background** | 환경 USD 씬 전환(warehouse/office/simple_room/hospital/grid…) | `pool`, `interval` | **9 프리셋**(grid×3·warehouse×3·simple_room·office·hospital). 로컬 경로=오프라인/프리셋명=온라인. pool 전부 pre-reference 후 interval 마다 하나만 visible |
+| 4 | **pose** | 객체 위치 + 회전 (+ origin-aware 배치) | `target`, `position{x,y,z}`, `rotation`, `yaw_deg` | `rotation: none\|yaw(=z_only)\|uniform_euler\|uniform_so3`. `objects[].origin: bottom` 과 짝이면 바닥 안착 |
+| 5 | **camera** | 시점 (look-at 반구/구면) | `mode: look_at`, `distance`, `elevation_deg`, `azimuth_deg` | obj centroid 를 바라보며 구면좌표 샘플. obj별 valid-view 제약은 로드맵(§CONSUMER §4-D) |
+| 6 | **distractors** | 방해 물체(clutter) 스폰·산포 | `pool`, `count`, `extents`, `semantic_class` | pool 빈=no-op. 씬 아무 데나 scatter → **가림 비보장**. pool 에 obj_id/usd |
+| 7 | **occluder** | **부분 가림 보장** (카메라-타깃 시선 위 배치) | `pool`, `count`, `occlusion_frac`, `target_region`, `depth_range`, `jitter`, `semantic_class` | pool=`prim:{cube,sphere,cylinder,cone,capsule}`(**도형 5종**)\|obj_id\|usd. 실제 가림=**visib_fract GT**(occlusion_frac 은 바이어스). `target_region:<part class>` 로 특정 부위(parts.json) |
+
+**에셋 풀 카탈로그 개수** (asset-pool 랜덤화가 고를 수 있는 "종류 수"; 정의 = `sdg/assets.py`):
+
+| 풀 | 카탈로그 개수 | 세부 | 로컬화 위치 |
+|---|---|---|---|
+| HDRI 하늘 (lighting `hdri`) | **15종 / 5 카테고리** | Clear 5·Cloudy 2·Evening 1·Indoor 5·Night 2 | `assets/env/hdri/` (fetch, gitignore) |
+| 환경 USD 배경 (background `pool`) | **9 프리셋** | grid×3·warehouse×3·simple_room·office·hospital | `assets/env/usd/<name>/` (opt-in, 대용량) |
+| 바닥 텍스처 (materials `target:ground`) | **동적 ~50종** | 8 카탈로그 dir 열거(wood/stone/masonry/carpet/concrete/gravel…), diffuse 만; curated fallback 6 | `assets/textures/ground/` (fetch, gitignore) |
+| occluder 제네릭 도형 | **5종** | cube·sphere·cylinder·cone·capsule | 엔진 내장 프리미티브 |
+| pose 회전 모드 | **4** | none·yaw·uniform_euler·uniform_so3 | — |
+| lighting fixture kinds | **2** | rect·distant (+ dome ambient) | 엔진 라이트 |
+
+> **개수 주의**: HDRI·환경·바닥 풀은 **다운로드(gitignore)** → **실제 고르는 개수 = 로컬 dir 에 받은 파일 수**
+> (오프라인) 또는 카탈로그 전체(온라인, 네트워크). `distractors`·`occluder` 의 obj/usd pool 과 materials 의
+> 사용자 `textures` dir 는 **config 에 넣은 개수만큼**. 색/거칠기/금속성·조명 intensity·색온도·카메라 각도·
+> pose 위치는 **개수가 아니라 연속 범위**(무한). 현재 개수를 확인하려면:
+> `ls assets/env/hdri | wc -l`, `ls -d assets/env/usd/*/`, `ls assets/textures/ground | wc -l`.
+>
+> **에셋을 더 받아 랜덤화에 적용하는 절차**(폴더 glob=바닥·HDRI 는 drop-in / 명시 리스트=배경·distractor·
+> occluder 는 pool 에 추가 / 환경은 collect 필요)는 `DEPENDENCIES.md §3-2` 참조.
+
+**랜덤화는 아니지만 매 프레임 확률적 변형** (참고):
+- **`realsense_depth` 센서** (`sensors[].type`, randomizer 아님·sensor 플러그인): bias + 거리²노이즈 + edge dropout
+  + speckle hole 로 depth 를 실센서처럼 열화. 기본은 `ideal`(무열화 GT). 값은 `calibration/` 실측으로(임의값 금지).
+
+**엔진 backing 요약** (전부 우리 플러그인이 config→per-frame Set 하지만 밑단 차이):
+- 손잡이만 돌림(엔진 속성): materials·pose·camera·distractors·occluder·background(USD/머티리얼/피직스 속성).
+- 엔진 라이트/렌더 기능: lighting(dome/rect/distant light).
+- 미구현(추가 가능): 재질 투명/유리(OmniGlass, §CONSUMER §4-J 보류), 객체 스케일 지터, 물리 낙하/적재,
+  RGB 센서 열화(노이즈/블러/노출 — 자체 후처리), 카메라 왜곡(rectify 하면 불요), 대기/볼류메트릭(저우선).
+
+> 이 표가 "현재 랜덤화 정도"의 **단일 출처**다. 새 randomizer 를 추가하면 여기 행을 추가할 것.
+> 개념 개요(학습용)는 `introduction.md §5`, 상세 구현·함정·검증은 `CLAUDE.md` 각 항목.
+
+---
+
 ## 3. 출력 포맷
 
 - **generic (MVP, 지금)**: obj/태스크 무종속 폴더 구조.

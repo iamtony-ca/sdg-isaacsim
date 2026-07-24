@@ -133,6 +133,9 @@ datasets/bop10/
 
 이게 있어서 **같은 obj_000이라도 조명·배경·각도·가림이 다 다른 수천 장**이 나옵니다.
 
+> 위는 **개념 개요**입니다. 현재 등록된 randomizer **7종**의 정밀 인벤토리(각 type·config 키·서브모드·
+> 검증 여부)는 **`SDG.md §2.1 랜덤화 인벤토리`** 가 단일 출처입니다.
+
 ---
 
 ## 6. surface normal / optical flow / cross-correspondence — 활용성이 낮은가?

@@ -88,6 +88,50 @@
   (파일 다운로드), `omni.kit.usd.collect.Collector`(환경 의존성 수집), 루트는
   `isaacsim.storage.native.get_assets_root_path()`.
 
+### 3-2. Isaac 에셋을 더 추가해 랜덤화에 적용하기 (★ 자주 하는 것)
+
+나중에 Isaac 클라우드 하늘/바닥/환경/오브젝트를 **ws 에 더 받아** 랜덤화에 넣을 때의 절차.
+**randomizer 가 pool 을 "폴더 glob" 로 읽느냐 "명시 리스트" 로 읽느냐**에 따라 두 갈래다:
+
+**(A) 폴더 glob — 파일만 넣으면 설정 0 (다음 실행부터 자동):**
+- **lighting HDRI** (`hdri: <dir>`) → `assets/env/hdri/` 에 `.hdr/.exr` 추가
+- **materials ground 텍스처** (`materials target:ground`, `textures: <dir>`) → `assets/textures/ground/` 에
+  **diffuse/base-color** 이미지 추가
+- config 가 그 **폴더**를 가리키므로 리스트 수정 불필요 — randomizer `setup()` 이 매 실행 glob 한다
+  (`sdg/randomizers/base.py::resolve_asset_list`).
+
+**(B) 명시 리스트 — config `pool` 에 항목을 추가해야 함:**
+- **background**(환경 USD), **distractors**, **occluder** — pool 의 **각 entry 를 하나씩** 해석(폴더 glob 아님).
+- 파일을 넣어도 `pool` 리스트에 이름/경로가 없으면 **안 잡힌다** → config 에 한 줄 추가.
+
+**주의 3가지:**
+1. **형식**: HDRI 는 환경맵(.hdr/.exr), 바닥은 **diffuse 만**(normal/roughness/orm 맵을 넣으면 오작동).
+   `fetch_isaac_assets.py` 는 diffuse 만 **자가검증**해 받으니 안전(수동 복사 시 주의).
+2. **환경 USD 는 단일 파일 복사로 깨진다** — 머티리얼/텍스처/props 의존성까지 `omni.kit.usd.collect` 로
+   수집해야 오프라인 정상 → 반드시 `fetch_isaac_assets.py --envs <name>` 로 받고(수집 자동), **그다음 config
+   `pool` 에 이름 추가**(2스텝).
+3. **오브젝트 표면 텍스처**는 UV 없는 STL 에서 smear → 텍스처 drop-in 은 **바닥(ground)에만 실효**,
+   오브젝트는 색/roughness/metallic 랜덤화가 실질 경로.
+
+**반영 시점**: glob/pool 해석은 randomizer `setup()` 에서 일어난다 → **다음 생성 실행부터** 적용(실행 중 라이브 아님).
+
+```bash
+# 바닥·하늘: fetch(또는 diffuse png/.hdr 직접 복사) → 바로 랜덤화 (A)
+/isaac-sim/python.sh tools/fetch_isaac_assets.py --floors --skies
+
+# 환경 배경: 수집 다운로드 + config pool 에 추가 (2스텝) (B)
+/isaac-sim/python.sh tools/fetch_isaac_assets.py --envs warehouse,hospital
+#   그다음 config:  - {type: background, pool: [office, simple_room, warehouse, hospital], interval: 5}
+
+# 현재 로컬에 몇 개 있는지 확인
+ls assets/env/hdri | wc -l ;  ls -d assets/env/usd/*/ ;  ls assets/textures/ground | wc -l
+```
+
+> **카탈로그 자체를 늘리려면**(우리가 고른 목록에 없는 클라우드 에셋): `sdg/assets.py` 의
+> `ISAAC_ENVIRONMENTS`/`ISAAC_SKIES`/`ISAAC_GROUND_DIRS` 에 클라우드 경로를 추가한 뒤 fetch → 그 카탈로그가
+> `SDG.md §2.1` 의 "개수" 출처다(§2.1 은 이 목록의 미러). 이 개수는 **설치본 내장이 아니라 NVIDIA 클라우드**를
+> 가리키는 **우리 큐레이트 목록**이다.
+
 ## 4. 재현 절차 (fresh clone → 첫 렌더)
 
 ```bash
