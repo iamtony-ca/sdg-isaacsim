@@ -167,7 +167,7 @@ writer:
   RGB 센서 열화(노이즈/블러/노출 — 자체 후처리), 카메라 왜곡(rectify 하면 불요), 대기/볼류메트릭(저우선).
 
 > 이 표가 "현재 랜덤화 정도"의 **단일 출처**다. 새 randomizer 를 추가하면 여기 행을 추가할 것.
-> 개념 개요(학습용)는 `introduction.md §5`, 상세 구현·함정·검증은 `CLAUDE.md` 각 항목.
+> 개념 개요(학습용)는 `introduction.md §5`, 상세 구현·검증은 `CHANGELOG.md`, 재발 방지 함정은 `CLAUDE.md`.
 
 ---
 
@@ -233,7 +233,8 @@ keypoints/pose 축을 그려 `<dataset>/qa/` 에 저장. Isaac 불필요(번들 
 | **S4 preset** | real-sensor 열화, amodal mask, QA 시각화 | ✅ realsense_depth·amodal·`tools/visualize.py` 완료 |
 
 **진행**: S1~S4 전부 구현·검증 완료. 프레임워크는 대량 생성 준비 상태 — 남은 것은 *생성/확장*
-(대량 생성, part-level·keypoints 정의, stereo pair 출력 등). 세부 상태·다음 작업은 `CLAUDE.md` "현재 상태" 참조.
+(대량 생성, part-level·keypoints 정의, stereo pair 출력 등). 구현 이력은 `CHANGELOG.md`, 다음 작업은
+`CLAUDE.md` "현재 상태" 참조.
 
 ---
 

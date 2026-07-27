@@ -47,12 +47,22 @@ DEFAULT_ENVS = ["simple_room", "office"]
 # CAD -> obj_id imports to reproduce on a fresh clone. CAD sources are git-tracked under
 # assets/cad/; the converted mesh.usd is gitignored (regenerated here). Add a dict per object.
 # Keeps object identity generic (referenced only by obj_id — CLAUDE.md principle 2).
+#
+# Prefer the B-rep source (.stp/.step/...) over a derived .stl when both exist: import_cad routes
+# it to the HOOPS back-end, which yields an indexed mesh (shared vertices -> usable smooth normals)
+# with a tessellation density you control via --tess-lod. Measured on this part, same bbox/units/
+# orientation either way: stl = 41400 pts / 13800 tris / 995 KB, stp = 14320 pts / 16881 tris /
+# 402 KB. "units": "auto" reads the unit the B-rep records (this STEP is authored in inches).
+#
+# Keys: obj_id, cad (repo-relative), units (auto|mm|cm|m|in), up_axis (Z|Y), and optionally
+# tess_lod (B-rep tessellation density, default 2 — raise for smoother curved surfaces).
 OBJECT_IMPORTS = [
     {
         "obj_id": "obj_000",
-        "cad": "assets/cad/6-inch-wafer-cassette/Wafer Cassette_6 Inch - 25 Wafer Capacity.stl",
-        "units": "mm",
+        "cad": "assets/cad/6-inch-wafer-cassette/Wafer Cassette_6 Inch - 25 Wafer Capacity.stp",
+        "units": "auto",
         "up_axis": "Z",
+        # "tess_lod": 3,
     },
 ]
 
@@ -153,6 +163,8 @@ def main() -> None:
                 continue
             cmd = [_isaac_python(), os.path.join("tools", "import_cad.py"), cad,
                    "--obj-id", obj_id, "--input-units", spec["units"], "--up-axis", spec["up_axis"]]
+            if spec.get("tess_lod") is not None:  # B-rep only; mesh inputs ignore it
+                cmd += ["--tess-lod", str(spec["tess_lod"])]
             if _run(cmd, args.dry_run) != 0:
                 failures.append(f"object({obj_id})")
 

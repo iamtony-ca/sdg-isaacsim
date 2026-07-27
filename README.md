@@ -1,7 +1,8 @@
 # sdg_ws — Synthetic Data Generation (Isaac Sim 6.0.1)
 
 Isaac Sim 6.0.1 위 **범용·확장 가능한 synthetic data generation 환경**. 특정 태스크/객체 무종속,
-config·plugin 구동. 설계는 [`SDG.md`](SDG.md), 세션 컨텍스트·원칙은 [`CLAUDE.md`](CLAUDE.md),
+config·plugin 구동. 설계는 [`SDG.md`](SDG.md), 세션 컨텍스트·원칙·함정은 [`CLAUDE.md`](CLAUDE.md),
+기능별 구현 이력·검증 수치는 [`CHANGELOG.md`](CHANGELOG.md),
 다운스트림 6D pose 소비 사례 검토·되먹임 요구사항은 [`CONSUMER_6DPOSE.md`](CONSUMER_6DPOSE.md).
 
 ## 현재 상태

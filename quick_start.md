@@ -7,14 +7,102 @@
 cd /isaac-sim/volume/sdg_ws
 ```
 
-> 실행 파이썬은 항상 번들 `/isaac-sim/python.sh` (시스템 `python3` 없음).
+> **렌더·에셋 변환은 반드시 번들 `/isaac-sim/python.sh`.** Isaac 이 필요 없는 단계(`--dry-run`,
+> `tools/visualize.py`)는 시스템 `python3`(3.12, numpy·cv2·PIL 포함)로도 되고 기동이 훨씬 빠르다.
 > 프레임 수는 config 값과 무관하게 **`--frames 20`** 으로 덮어쓸 수 있으므로, 기존 config 를 그대로 재사용한다.
 
 ---
 
 ## 0. 준비 (한 번만)
 
-### 0-1. 에셋 부트스트랩 (gitignore 된 것 재생성)
+### 0-1. 새 객체 등록 — CAD 파일 하나에서 시작 (★ 새 객체를 받았다면 여기부터)
+
+전제: 방금 `assets/cad/<폴더>/part.stp` 를 넣었다. 목표는 **`obj_id` 하나 만들기** —
+그 뒤 모든 단계(1~8번)는 객체가 무엇이든 동일하다. (기존 `obj_000` 로 검증만 할 거면 0-2 로 건너뛴다.)
+
+**① 변환 — CAD → `assets/obj/<obj_id>/mesh.usd`**
+
+```bash
+/isaac-sim/python.sh tools/import_cad.py "assets/cad/<폴더>/part.stp" --obj-id obj_001
+```
+
+- **백엔드는 확장자로 자동 선택**된다. 신경 쓸 필요 없지만 알아둘 것:
+  | 입력 | 백엔드 | 비고 |
+  |---|---|---|
+  | `.stp` `.step` `.igs` `.iges` `.CATPart` `.sldprt` `.ipt` `.x_t` `.jt` `.prt` … (**B-rep CAD**) | `omni.kit.converter.hoops_core` (HOOPS Exchange) | 곡면을 삼각형으로 **테셀레이션**함 |
+  | `.stl` `.obj` `.fbx` `.gltf` `.glb` (**이미 삼각형 메시**) | `omni.kit.asset_converter` | |
+  전체 지원 목록은 `omni/kit/converter/hoops_core/impl/filters.py`.
+  ⚠️ `.stp` 를 mesh 백엔드로 보내면 `UNSUPPORTED_IMPORT_FORMAT` 이다 — 라우팅은 자동이므로 그냥 두면 된다.
+- B-rep 변환은 **수 분** 걸린다(SimulationApp 기동 + 테셀레이션). STL 은 1분 내외.
+- 산출물 `assets/obj/obj_001/mesh.usd` 는 self-contained · **metres** · bbox 중심정렬이라 씬 빌더가 바로 참조한다.
+
+**② 크기 검증 (★ 가장 중요 — 여기서 안 잡으면 데이터셋 전체가 틀린 스케일로 나온다)**
+
+출력의 마지막 줄들을 반드시 읽는다:
+
+```
+[import_cad] --input-units auto -> metersPerUnit=0.0254 from the converted stage
+[import_cad] final size (m): [0.181, 0.1762, 0.1529]  (expected ~[0.181, 0.1762, 0.1529])
+```
+
+- `final size (m)` 를 **실물 치수(도면)와 대조**한다. 맞으면 통과.
+- 기본 `--input-units auto` 는 변환된 stage 의 `metersPerUnit` 을 읽는다. **B-rep 은 저작 단위를 파일에 갖고
+  있어 auto 가 정확하다** (예: 이 STEP 은 inch 저작 → `0.0254`). 반면 **STL/OBJ 는 단위를 안 갖는다** →
+  auto 가 경고를 찍고 mm 로 가정한다.
+- **틀렸을 때만** 명시한다: `--input-units mm|cm|m|in`.
+  증상은 배수로 나타난다 — 25.4배(inch↔mm), 1000배(m↔mm), 10배(cm↔mm).
+
+**③ 곡면 품질 (B-rep 만)**
+
+`--tess-lod 2`(기본). 렌더에서 원통·필렛이 각져 보이면 `3`~`4` 로 올린다(삼각형↑ = 파일·렌더 비용↑).
+
+**④ 좌표계 확인**
+
+`import_cad` 는 **지오메트리를 회전하지 않는다**(up-axis 메타만 기록). `objects[].origin: bottom` 과
+`rotation: yaw`(바닥 안착 + heading 다양성)는 로컬 AABB 의 Z-최소를 "바닥"으로 보므로, CAD 저작 축이
+**Z-up** 이어야 진짜 바닥을 맞힌다. 아니면 ⑥ 렌더에서 물체가 옆으로 누워 보인다.
+
+**⑤ config 만들기 — 코드 수정은 없다(원칙3)**
+
+```bash
+sed -e 's/name: example/name: obj_001/' \
+    -e 's|datasets/example|datasets/obj_001|' \
+    -e 's/obj_id: obj_000/obj_id: obj_001/' \
+    -e 's/class: obj_000/class: obj_001/' \
+    config/example.yaml > config/obj_001.yaml
+```
+
+**⑥ 첫 렌더 3장 + 눈으로 확인**
+
+```bash
+/isaac-sim/python.sh sdg/run_sdg.py --config config/obj_001.yaml --frames 3 --headless
+python3 tools/visualize.py datasets/obj_001          # QA 오버레이 (Isaac 불필요)
+```
+
+> ✅ 통과 기준: `datasets/obj_001/rgb/` 에 **물체가 실제로 보이고**, `qa/` 오버레이에서 bbox 가 물체를
+> 감싸고 pose 축이 바닥 중앙에서 뻗는다. `meta/000000.json` 의 `objects` 가 비어있지 않아야 한다.
+> **물체가 안 보이는데 에러도 없으면** 지오메트리가 비었다는 뜻이다(에셋 함정) — ②의 크기 출력과
+> `--tess-lod` 를 먼저 의심.
+
+**⑦ 재현성 등록 (권장)**
+
+`mesh.usd` 는 gitignore 다. fresh clone 에서 자동 재생성되도록 `tools/setup_assets.py` 의
+`OBJECT_IMPORTS` 에 한 줄 추가한다(CAD 소스는 git 추적):
+
+```python
+{"obj_id": "obj_001", "cad": "assets/cad/<폴더>/part.stp", "units": "auto", "up_axis": "Z"},
+```
+
+**⑧ (선택) GT 채널 추가**
+
+- `assets/obj/obj_001/keypoints.json` — object-local 3D 점 → 매 프레임 2D 투영 + 가시성.
+- `assets/obj/obj_001/parts.json` — 서브프림에 semantic class → 부분 mask(예: 표준 플랜지만).
+
+이제 아래 0-2 부터 순서대로, `config/example.yaml` 대신 `config/obj_001.yaml` 을 쓰면 된다.
+
+---
+
+### 0-2. 에셋 부트스트랩 (gitignore 된 것 재생성)
 
 `mesh.usd`, 바닥 텍스처, HDRI 하늘은 git 에 없다(용량). clone 직후 한 번 재생성:
 
@@ -25,15 +113,17 @@ cd /isaac-sim/volume/sdg_ws
 - 이미 있으면 건너뜀(idempotent). 환경 USD 배경(9번 단계)까지 쓰려면: `--all` 또는 `--envs simple_room,office`.
 - 무엇이 되는지 미리 보기: `--dry-run`.
 
-### 0-2. 설치 없이 config 만 검사 (Isaac 미기동, 5초)
+### 0-3. 설치 없이 config 만 검사 (Isaac 미기동, 5초)
 
 렌더 전에 config/registry 스캐폴딩만 빠르게 점검한다. **크래시·오타를 여기서 먼저 거른다:**
 
 ```bash
 for c in smoke example bop10 coco20 yolo20 dr_demo; do
-  echo "=== $c ==="; /isaac-sim/python.sh sdg/run_sdg.py --config config/$c.yaml --dry-run || break
+  echo "=== $c ==="; python3 sdg/run_sdg.py --config config/$c.yaml --dry-run || break
 done
 ```
+
+> 새 객체용 config 를 만들었다면 목록에 추가한다(예: `... dr_demo obj_001`).
 
 정상이면 각 config 의 파싱 결과(축·plugin 이름)가 출력되고 에러 없이 끝난다.
 
@@ -173,7 +263,7 @@ data.yaml                       names / nc / train / val 경로
 ```
 
 > ✅ 통과 기준: `datasets/dr_demo/rgb/` 를 훑어 프레임마다 조명(따뜻/차가움/저각도 그림자)·바닥(원목/타일/석재)·
-> 객체 색이 **서로 다르게** 보이면 DR 정상. 체커보드 바닥이 보이면 텍스처 미로딩(→ 0-1 재실행).
+> 객체 색이 **서로 다르게** 보이면 DR 정상. 체커보드 바닥이 보이면 텍스처 미로딩(→ 0-2 재실행).
 
 ---
 
@@ -232,8 +322,12 @@ done
 | 증상 | 원인 / 조치 |
 |---|---|
 | `error.log` 가 생김 | fast-shutdown 이 traceback 을 삼켜 여기에 먼저 기록됨 — **먼저 이 파일을 볼 것**. |
+| `UNSUPPORTED_IMPORT_FORMAT` | B-rep CAD(.stp 등)를 mesh 백엔드로 보냄. 현재 `import_cad.py` 는 자동 라우팅하므로, 이 에러가 보이면 확장자가 지원 목록(`hoops_core/impl/filters.py`)에 없는 것. |
+| 물체가 25.4× / 1000× / 10× 크거나 작음 | 단위 오해석 — `import_cad.py --input-units in\|mm\|m\|cm` 로 명시 후 재변환. auto 는 B-rep 에만 신뢰. |
+| 곡면(원통·필렛)이 각져 보임 | B-rep 테셀레이션이 성김 — `import_cad.py --tess-lod 3` (또는 4). |
+| `import_cad.py` 가 성공한 듯한데 `mesh.usd` 없음 | 구버전은 fast-shutdown 탓에 실패해도 exit 0 이었다. 현재는 **exit 2 + stderr** 로 알린다 — 메시지를 볼 것. |
 | 객체가 안 보임(빈 바닥) | mesh 미로딩 → `tools/setup_assets.py --force`. 또는 카메라 near clip / pose z 확인. |
 | 바닥이 체커보드 | 바닥 텍스처 미로딩 → `setup_assets.py --steps floors --force`. |
 | frame 0 에서 크래시 | warm-up 관련 — 재실행하면 대개 해소(camera_params 준비 타이밍 의존). |
 | 환경 USD 배경 검정/깨짐 | `--envs` 로 해당 env 를 먼저 로컬화했는지 확인(단일 파일 복사로는 깨짐). |
-| `python3: command not found` | 시스템 파이썬 없음 — 반드시 `/isaac-sim/python.sh` 사용. |
+| `ModuleNotFoundError: omni…` (시스템 python3) | Isaac API 는 번들 파이썬에만 있다 — 렌더/변환은 `/isaac-sim/python.sh`. |
