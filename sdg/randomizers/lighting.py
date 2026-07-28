@@ -27,6 +27,9 @@ config:
    color_temperature: [lo,hi],      # Kelvin; optional. warm<->cool. Applies to dome+fixtures.
    hdri: <dir | [paths/urls] | isaac_skies[:Cat,..]>,   # optional env-map pool (see below)
    hdri_rotate: true | [lo,hi],     # optional dome Y-rotation (deg); true = [0,360]
+   hdri_normalize: true,            # scale dome intensity by each map's brightness (see below)
+   hdri_normalize_clamp: [lo,hi],   #   correction limits (default [0.3, 3.0])
+   hdri_normalize_ref: <float>,     #   reference radiance (default: the pool's median)
    fixtures: {                      # optional overhead local lights (directional + shadows)
      kinds: [rect, distant],        #   rect = ceiling panel, distant = angled sun/window
      count: [lo,hi],                #   how many active per frame
@@ -39,11 +42,19 @@ config:
 `hdri` sources may be mixed: a local dir/file, a remote URL, or the keyword `isaac_skies`
 (Isaac's built-in sky library). For OFFLINE use, localize a pool with
 tools/fetch_isaac_assets.py and point `hdri` at the local dir.
+
+`hdri_normalize` exists because the dome intensity MULTIPLIES the env map: with a pool that
+spans ~12.6x in mean radiance (this repo's local set: kloppenheim 0.237 .. noon_grass 3.0), one
+intensity range renders black on a dark map and blows out on a bright one. Enabling it measures
+each map's mean radiance once at setup (linear float; cv2 or imageio) and scales the sampled
+intensity by median/L_i, clamped. Only LOCAL files can be measured — remote/`isaac_skies` URLs
+keep gain 1.0.
 """
 from __future__ import annotations
 
 import math
-from typing import List, Tuple
+import os
+from typing import Dict, List, Optional, Tuple
 
 from ..registry import register
 from .base import Randomizer, resolve_asset_list
@@ -59,13 +70,56 @@ class LightingRandomizer(Randomizer):
         super().__init__(cfg, ctx)
         self._hdris: List[str] = []
         self._fixtures: List[Tuple[object, str]] = []  # (prim, kind)
+        self._hdri_gain: Dict[str, float] = {}  # path -> dome-intensity correction factor
 
     def setup(self) -> None:
         self._hdris = resolve_asset_list(self.cfg.get("hdri"), _HDRI_EXTS)
         if self.cfg.get("hdri") and not self._hdris:
             print(f"[sdg][lighting] hdri set but no images found: {self.cfg.get('hdri')} — "
                   f"dome stays untextured.")
+        self._measure_hdri_gains()
         self._spawn_fixtures()
+
+    # ------------------------------------------------------- HDRI normalization
+    def _measure_hdri_gains(self) -> None:
+        """Per-HDRI dome-intensity correction so `intensity` means the same exposure for
+        every map in the pool.
+
+        The dome intensity MULTIPLIES the env map, but map brightness varies enormously (this
+        repo's 16-map pool spans ~12.6x in mean radiance), so one intensity range yields black
+        frames on a night map and blow-out on a noon sky. We measure each map's mean radiance
+        L_i once here and scale the sampled intensity by `L_ref / L_i`, where L_ref is the
+        pool's MEDIAN — so the config's numbers keep meaning "exposure for a typical map" and
+        only the outliers get pulled in. Off by default (`hdri_normalize: true` to enable):
+        it changes the look of every frame, so it must be an explicit choice.
+
+        The correction is clamped (`hdri_normalize_clamp`, default [0.3, 3.0]) — fully
+        equalizing a night sky to noon is neither achievable nor desirable.
+        """
+        if not self._hdris or not self.cfg.get("hdri_normalize"):
+            return
+        lo, hi = _pair(self.cfg.get("hdri_normalize_clamp", [0.3, 3.0]))
+        means: Dict[str, float] = {}
+        for p in self._hdris:
+            v = _mean_radiance(p)
+            if v is not None and v > 0.0:
+                means[p] = v
+        if not means:
+            print("[sdg][lighting] hdri_normalize: could not read any HDRI radiance "
+                  "(no cv2/imageio HDR reader?) — normalization disabled for this run.")
+            return
+        vals = sorted(means.values())
+        ref = self.cfg.get("hdri_normalize_ref")
+        ref = float(ref) if ref is not None else vals[len(vals) // 2]  # median
+        for p, v in means.items():
+            self._hdri_gain[p] = min(max(ref / v, lo), hi)
+        unread = [p for p in self._hdris if p not in means]
+        print(f"[sdg][lighting] hdri_normalize: ref(median)={ref:.3f} over {len(means)} map(s), "
+              f"gain clamped to [{lo:g}, {hi:g}]"
+              + (f"; {len(unread)} unreadable -> gain 1.0" if unread else ""))
+        for p in sorted(means, key=lambda k: means[k]):
+            print(f"[sdg][lighting]   {means[p]:7.3f} -> x{self._hdri_gain[p]:.2f}  "
+                  f"{os.path.basename(p)}")
 
     # ------------------------------------------------------------------ setup
     def _spawn_fixtures(self) -> None:
@@ -114,10 +168,15 @@ class LightingRandomizer(Randomizer):
         dome = stage.GetPrimAtPath(_DOME_PATH)
         if dome and dome.IsValid():
             lo, hi = _pair(self.cfg.get("intensity", [1000.0, 1000.0]))
-            _set_attr(dome, "inputs:intensity", float(rng.uniform(lo, hi)))
+            intensity = float(rng.uniform(lo, hi))
             _set_color_temperature(dome, ctemp, rng)
             if self._hdris:
-                _set_texture(dome, self._hdris[int(rng.integers(len(self._hdris)))])
+                # NB: draw the map BEFORE applying its gain — the sampled intensity above and
+                # this draw must keep their order in the RNG stream regardless of normalization.
+                hdri = self._hdris[int(rng.integers(len(self._hdris)))]
+                _set_texture(dome, hdri)
+                intensity *= self._hdri_gain.get(hdri, 1.0)  # 1.0 = normalization off/unread
+            _set_attr(dome, "inputs:intensity", intensity)
             rot = self.cfg.get("hdri_rotate")
             if rot:
                 rlo, rhi = (0.0, 360.0) if rot is True else _pair(rot)
@@ -175,6 +234,44 @@ def _set_texture(prim, path: str) -> None:
     if not attr:
         attr = prim.CreateAttribute("inputs:texture:file", Sdf.ValueTypeNames.Asset)
     attr.Set(Sdf.AssetPath(path))
+
+
+_RADIANCE_CACHE: Dict[str, Optional[float]] = {}
+
+
+def _mean_radiance(path: str) -> Optional[float]:
+    """Mean linear radiance of an env map, or None if it cannot be read.
+
+    Must stay in LINEAR float — an 8-bit decode would clip the sun and destroy the very
+    difference we are measuring. cv2 handles .hdr directly; imageio is the fallback (it also
+    covers .exr, which cv2 only reads when OPENCV_IO_ENABLE_OPENEXR is set). Remote URLs are
+    skipped (no local file to read) and simply get gain 1.0.
+    """
+    if path in _RADIANCE_CACHE:
+        return _RADIANCE_CACHE[path]
+    value: Optional[float] = None
+    if os.path.isfile(path):
+        try:
+            import cv2
+            import numpy as np
+
+            img = cv2.imread(path, cv2.IMREAD_ANYDEPTH | cv2.IMREAD_ANYCOLOR)
+            if img is not None and np.issubdtype(img.dtype, np.floating):
+                value = float(np.asarray(img, dtype=np.float64).mean())
+        except Exception:  # noqa: BLE001 — reader problems must not break a run
+            value = None
+        if value is None:
+            try:
+                import imageio.v3 as iio
+                import numpy as np
+
+                arr = np.asarray(iio.imread(path), dtype=np.float64)
+                if np.issubdtype(arr.dtype, np.floating):
+                    value = float(arr.mean())
+            except Exception:  # noqa: BLE001
+                value = None
+    _RADIANCE_CACHE[path] = value
+    return value
 
 
 def _set_dome_rotation(prim, deg_y: float) -> None:

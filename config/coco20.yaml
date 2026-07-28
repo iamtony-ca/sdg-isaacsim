@@ -21,9 +21,9 @@ objects:
     semantic: {class: obj_000}
 
 randomizers:
-  - {type: lighting,    intensity: [300, 900], color_temperature: [3000, 6500],
-     hdri: assets/env/hdri, hdri_rotate: true,
-     fixtures: {kinds: [rect, distant], count: [0, 2], intensity: [400, 2000],
+  - {type: lighting,    intensity: [600, 1000], color_temperature: [3000, 6500],
+     hdri: assets/env/hdri, hdri_rotate: true, hdri_normalize: true,
+     fixtures: {kinds: [rect, distant], count: [1, 2], intensity: [400, 2000],
                 color_temperature: [3000, 6500], distance: [2.0, 5.0], elevation_deg: [35, 85], size: [0.5, 2.0]}}
   - {type: materials,   target: objects, roughness: [0.1, 0.9], metallic: [0.0, 0.6], base_color: hsv_jitter}
   - {type: materials,   target: ground, textures: assets/textures/ground, texture_prob: 0.9, texture_scale: [0.7, 3.0], base_color: hsv_jitter}

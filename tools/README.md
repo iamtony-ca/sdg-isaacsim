@@ -211,8 +211,19 @@ Y-up 소스는 씬에서 **옆으로 누운 채** 들어온다. 유일하게 맞
 `--up-axis Y` → `[0.181, 0.1529, 0.1762]` (Y·Z 치수가 교환 = 회전이 실제로 들어감).
 참고로 이 STEP 은 HOOPS 가 `upAxis=Z` 로 찍어 나오며, 그 값은 항상 로그에 출력된다.
 
-`objects[].origin: bottom` 과 `rotation: yaw` 는 로컬 AABB 의 **Z-최소**를 "바닥"으로 보므로,
+`objects[].origin: bottom` 과 `rotation: yaw` 는 **월드 up(Z)** 기준으로 바닥면을 고르므로,
 Y-up CAD 를 받았으면 **반드시 `--up-axis Y` 로 임포트**해야 진짜 바닥면을 맞힌다.
+
+**에셋 레이아웃(왜 prim 이 하나 늘어나는가)**: 회전은 **에셋 루트에 두지 않는다**. replicator 의 pose op 가
+에셋 자신의 transform *안쪽*에서 합성되기 때문에, 루트에 회전이 있으면 `rotation: yaw` 가 월드 up 이 아니라
+에셋 축 기준 회전이 되어 물체가 눕고 `origin: bottom` 배치가 어긋난다(실측 −11 mm / +153 mm).
+
+| 소스 | 레이아웃 | `/obj`(루트) |
+|---|---|---|
+| Z-up | `/obj/geo` (기존과 동일) | scale + translation |
+| Y-up | `/obj/rot/geo` | scale + translation (회전은 `/obj/rot` 이 담당) |
+
+→ Y-up 으로 임포트한 객체에 `parts.json` 을 쓸 때는 서브프림 경로에 **`rot/`** 가 한 단계 더 붙는다.
 
 ### 그 밖의 주의
 

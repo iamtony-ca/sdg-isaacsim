@@ -23,9 +23,12 @@ randomizers:
   # Kept modest because fixtures below add the key light — avoids double-exposure blow-out.
   # (For indoor-only realism, point `hdri` at the Indoor subset; bright outdoor skies can
   #  over-expose — some exposure variance is fine/beneficial DR, full blow-out is not.)
+  # EXPOSURE FLOOR: lo=600 (not 300). The dome intensity MULTIPLIES the HDRI, and the local
+  # pool spans ~12.6x in mean radiance (kloppenheim 0.237 .. noon_grass 3.0) — at lo=300 a dark
+  # map with no fixture renders a black frame (measured 4.9/255). See config/example.yaml.
   intensity:
-  - 300
-  - 900
+  - 600
+  - 1000
   # blackbody colour temperature: warm (~3000K incandescent/warm-LED) <-> cool (~6500K office
   # fluorescent/daylight). Physically-plausible tint variety across environments.
   color_temperature:
@@ -35,15 +38,20 @@ randomizers:
   # Online alternative (no local files): hdri: isaac_skies  (or isaac_skies:Indoor,Night).
   hdri: assets/env/hdri
   hdri_rotate: true
+  # per-map exposure normalization: dome intensity is scaled by median/mean-radiance
+  # of the drawn HDRI (pool spans ~12.6x), so one intensity range fits every map.
+  hdri_normalize: true
   # overhead fixtures -> directional key light + cast shadows (ceiling panel / angled window).
-  # count lo=0 => some frames are pure soft ambient (also realistic). Intensities kept modest
-  # since dome+HDRI already light the scene; raise if you want harsher, higher-contrast light.
+  # count lo=1 => every frame gets at least one key light. (lo=0 gave "pure soft ambient"
+  # frames, which go black whenever the dome also drew a dark HDRI — the exposure floor above
+  # and this pair together keep the band usable.) Intensities kept modest since dome+HDRI
+  # already light the scene; raise if you want harsher, higher-contrast light.
   fixtures:
     kinds:
     - rect
     - distant
     count:
-    - 0
+    - 1
     - 2
     intensity:
     - 400

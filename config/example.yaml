@@ -26,9 +26,20 @@ randomizers:
   #   ceiling panels / distant window-sun) giving directional light + cast shadows. HDRI env
   #   maps come from a local dir (offline; populate via tools/fetch_isaac_assets.py) or the
   #   online keyword `isaac_skies`. See config/dr_demo.yaml for a full `fixtures` example.
-  - {type: lighting,    intensity: [300, 900], color_temperature: [3000, 6500],
-     hdri: assets/env/hdri, hdri_rotate: true,
-     fixtures: {kinds: [rect, distant], count: [0, 2], intensity: [400, 2000],
+  #   EXPOSURE (tuned 2026-07-28, two mechanisms — both are needed):
+  #   1. `hdri_normalize: true` — dome intensity MULTIPLIES the env map, and this pool spans
+  #      ~12.6x in mean radiance (kloppenheim 0.237 .. noon_grass 3.0). Normalization scales the
+  #      sampled intensity by median/L_map (clamped [0.3,3.0]) so one range fits every map.
+  #   2. band dome [600,1000] (was [300,900]) + fixtures count lo=1 (was 0) — the exposure
+  #      FLOOR. Normalization alone is NOT enough: measured over 48 frames it still produced 2
+  #      unusable-dark frames (min 3.1/255) because it also DIMS bright maps (x0.30), so the
+  #      low end of a wide dome range goes black. Together: 0 unusable-dark, 0 heavily-clipped.
+  #   The original [300,900]+lo=0 rendered a fully black frame (4.9/255, 92% of px <10).
+  #   Wide exposure variety is good DR; a black or blown frame is not. Re-tune the band (its
+  #   ceiling drives the bright tail) if the HDRI pool changes.
+  - {type: lighting,    intensity: [600, 1000], color_temperature: [3000, 6500],
+     hdri: assets/env/hdri, hdri_rotate: true, hdri_normalize: true,
+     fixtures: {kinds: [rect, distant], count: [1, 2], intensity: [400, 2000],
                 color_temperature: [3000, 6500], distance: [2.0, 5.0], elevation_deg: [35, 85], size: [0.5, 2.0]}}
   # materials(objects+clutter): per-prim colour/roughness/metallic (UV-less meshes -> colour path).
   #   Occluders/distractors are separate prims that carry no material of their own — leave them

@@ -106,6 +106,12 @@ class DefaultSceneBuilder(SceneBuilder):
         the spawned prim's own bbox along the stage up-axis, so the same config works for any
         object regardless of its dimensions. Everything else (explicit [x,y,z] or
         {keypoint: i}) is delegated to SceneBuilder.resolve_origin.
+
+        The face is chosen in WORLD space (the prim is still at its spawn/identity placement)
+        and only then mapped back into the object-local frame that the GT uses. Picking it in
+        the untransformed frame instead would silently choose the wrong face for any asset
+        whose own transform carries a rotation — e.g. `import_cad --up-axis Y` bakes a +90° X
+        rotation, after which the asset's local +Z is world -Y, not up.
         """
         face = None
         if isinstance(origin_spec, str):
@@ -115,13 +121,13 @@ class DefaultSceneBuilder(SceneBuilder):
         if face is None:
             return self.resolve_origin(origin_spec, keypoints_local)
 
-        from pxr import Usd, UsdGeom
+        from pxr import Gf, Usd, UsdGeom
 
         cache = UsdGeom.BBoxCache(Usd.TimeCode.Default(),
                                  [UsdGeom.Tokens.default_, UsdGeom.Tokens.render])
-        rng = cache.ComputeUntransformedBound(prim).ComputeAlignedRange()
+        rng = cache.ComputeWorldBound(prim).ComputeAlignedRange()
         lo, hi = rng.GetMin(), rng.GetMax()
-        o = [(lo[i] + hi[i]) * 0.5 for i in range(3)]           # bbox centre
+        o = [(lo[i] + hi[i]) * 0.5 for i in range(3)]           # bbox centre (world)
         up = UsdGeom.GetStageUpAxis(prim.GetStage())
         comp = 1 if up == UsdGeom.Tokens.y else 2               # Isaac default is Z-up
         if face in ("bottom", "min"):
@@ -133,7 +139,12 @@ class DefaultSceneBuilder(SceneBuilder):
         else:
             raise ValueError(f"unsupported origin '{face}' (use bottom|top|center, "
                              f"[x,y,z], or {{keypoint: i}})")
-        return [float(v) for v in o]
+        # world -> object-local (mesh units, incl. any baked scale/rotation), because that is
+        # the frame origin_local is consumed in (collector.py maps it back out via the world
+        # transform). For a rotation-free asset this is exactly the old untransformed result.
+        M = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        p = M.GetInverse().Transform(Gf.Vec3d(float(o[0]), float(o[1]), float(o[2])))
+        return [float(p[0]), float(p[1]), float(p[2])]
 
     @staticmethod
     def _origin_world_offset(rep, prim, origin_local):

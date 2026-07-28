@@ -181,18 +181,34 @@ def _build_asset(raw_usd: str, out_usd: str, unit_factor: float, src_up: str, ce
 
     obj = UsdGeom.Xform.Define(stage, "/obj")
     stage.SetDefaultPrim(obj.GetPrim())
-    # Single transform op, row-vector convention (P' = P * M), composed left to right:
-    #   recentre on the bbox centre -> scale to metres -> rotate the source up-axis to Z.
+    # Row-vector convention (P' = P * M). The full transform is
+    #     recentre(-c) -> scale to metres(s) -> rotate source-up to Z(R)
+    # but it is SPLIT across two prims on purpose:
+    #   /obj      scale + translation only, NEVER a rotation
+    #   /obj/rot  the pure up-axis rotation (identity for a Z-up source)
+    # Why: /obj is the prim the scene references and the pose randomizer drives. Replicator's
+    # pose ops compose OUTSIDE-IN relative to the asset's own transform, so a rotation baked
+    # into /obj would make `rotation: yaw` a yaw about the ASSET's axis instead of world up —
+    # a Y-up asset would tumble sideways and `origin: bottom` placement would miss the ground.
+    # Keeping /obj rotation-free makes a Y-up import behave exactly like a Z-up one downstream.
+    # Algebra: T(-c)·S·R == S·T(-c·s·R) ∘ R, i.e. parent = S·T(-c·s·R), child = R.
     uf = float(unit_factor)
-    T = Gf.Matrix4d(1.0).SetTranslate(Gf.Vec3d(-c[0], -c[1], -c[2]))
-    S = Gf.Matrix4d(1.0).SetScale(Gf.Vec3d(uf, uf, uf))
     R = Gf.Matrix4d(1.0)
     if src_up == "Y":
         R = Gf.Matrix4d(1.0).SetRotate(Gf.Rotation(Gf.Vec3d(1, 0, 0), 90.0))
-    M = T * S * R
-    obj.AddTransformOp().Set(M)
+    cs = R.Transform(Gf.Vec3d(-c[0] * uf, -c[1] * uf, -c[2] * uf))
+    M_obj = Gf.Matrix4d(1.0).SetScale(Gf.Vec3d(uf, uf, uf)) * Gf.Matrix4d(1.0).SetTranslate(cs)
+    obj.AddTransformOp().Set(M_obj)
 
-    geo = stage.DefinePrim("/obj/geo")
+    # Z-up sources keep the historical layout exactly (/obj/geo, no extra prim) so existing
+    # assets and any parts.json sub-prim paths are untouched; the extra level appears only
+    # when a rotation actually has to be carried.
+    geo_path = "/obj/geo"
+    if src_up == "Y":
+        rot = UsdGeom.Xform.Define(stage, "/obj/rot")  # own prim so it cannot collide with
+        rot.AddTransformOp().Set(R)                    # the referenced layer's own xformOp
+        geo_path = "/obj/rot/geo"
+    geo = stage.DefinePrim(geo_path)
     geo.GetReferences().AddReference(os.path.abspath(raw_usd))
     stage.Flatten().Export(out_usd)  # inline geometry -> self-contained mesh.usd
 
