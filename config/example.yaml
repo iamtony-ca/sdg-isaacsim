@@ -30,8 +30,11 @@ randomizers:
      hdri: assets/env/hdri, hdri_rotate: true,
      fixtures: {kinds: [rect, distant], count: [0, 2], intensity: [400, 2000],
                 color_temperature: [3000, 6500], distance: [2.0, 5.0], elevation_deg: [35, 85], size: [0.5, 2.0]}}
-  # materials(objects): per-object colour/roughness/metallic (UV-less meshes -> colour path).
-  - {type: materials,   target: objects, roughness: [0.1, 0.9], metallic: [0.0, 0.6], base_color: hsv_jitter}
+  # materials(objects+clutter): per-prim colour/roughness/metallic (UV-less meshes -> colour path).
+  #   Occluders/distractors are separate prims that carry no material of their own — leave them
+  #   out of `target` and they render default-white in EVERY frame (which reads as "only some
+  #   things get randomized"). Targets are bound on the first frame, so config order is free.
+  - {type: materials,   target: [objects, occluders, distractors], roughness: [0.1, 0.9], metallic: [0.0, 0.6], base_color: hsv_jitter}
   # materials(ground): the ground fills the frame (camera looks down) — this IS the visible
   #   background. Randomize it across a realistic floor library (wood/stone/tile/gravel...),
   #   localized offline by tools/fetch_isaac_assets.py -> assets/textures/ground/.

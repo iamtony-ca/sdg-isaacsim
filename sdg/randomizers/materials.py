@@ -21,8 +21,19 @@ dominant visible surface — so backgrounds vary too.
   UV-less objects (verified to vary independently of lighting). UV-mapped object meshes get
   proper texturing.
 
+BINDING: one material is bound to each target's ROOT prim with `strongerThanDescendants`
+(rep.functional.modify.material's default), which DOES override the per-mesh material a CAD
+import brings in — verified on a STEP import whose Mesh carried its own `weakerThanDescendants`
+binding, on a mesh split into `materialBind` GeomSubsets, and through USD native instancing
+(HOOPS wraps geometry in an instanceable prim, so the gprims are read-only instance proxies —
+binding on the root still wins). So partial recolouring is NOT a binding-strength problem;
+it is almost always a TARGET problem: whatever is left uncoloured was never a target. Occluders
+and distractors in particular are separate prims — list them in `target` if you want them
+randomized too (`prim:cube` occluders otherwise render default-white in every frame).
+
 config:
-  {type: materials, target: objects | ground | all,
+  {type: materials, target: objects | ground | occluders | distractors | all | [<list>],
+   prim_paths: [/World/Foo, ...],  # optional: extra roots (each subtree gets one material)
    roughness: [lo,hi], metallic: [lo,hi], base_color: hsv_jitter | none,
    textures: <dir or [paths]>,   # optional: pool of .png/.jpg diffuse textures
    texture_prob: 0.7}            # optional: per-frame chance a target uses a texture
@@ -40,6 +51,7 @@ _METALLIC = "metallic_constant"
 _COLOR = "diffuse_color_constant"
 _DIFFUSE_TEX = "diffuse_texture"
 _TEX_EXTS = (".png", ".jpg", ".jpeg")
+_TARGETS = ("objects", "ground", "occluders", "distractors", "all")
 
 
 @register("randomizer", "materials")
@@ -49,25 +61,46 @@ class MaterialsRandomizer(Randomizer):
         self._shaders = []  # one UsdShade.Shader per target prim
         self._targets = []
         self._textures = []
+        self._bound = False
 
     def setup(self) -> None:
-        import omni.replicator.core as rep
-        from pxr import UsdShade
-
         self._textures = resolve_asset_list(self.cfg.get("textures"), _TEX_EXTS)
         if self.cfg.get("textures") and not self._textures:
             print(f"[sdg][materials] textures set but none found: {self.cfg.get('textures')}")
+        # Targets are resolved and bound on the FIRST apply(), not here: occluder/distractor
+        # prims are created in THEIR setup(), and randomizers are set up in config order, so
+        # resolving now would silently miss them whenever `materials` is listed first. Every
+        # setup() runs before any apply() (run_sdg._run_inside_app), so first-apply is safe.
+
+    def _bind(self) -> None:
+        import omni.replicator.core as rep
+        from pxr import UsdShade
+
+        self._bound = True
         self._targets = self._target_prims()
+        if not self._targets:
+            print(f"[sdg][materials] target {self.cfg.get('target', 'objects')!r} matched no "
+                  f"prims — nothing will be randomized by this entry")
+            return
+        # Tag the material names with the target so two `materials` entries (e.g. objects +
+        # ground) in one config cannot collide on a prim name.
+        raw_tag = str(self.cfg.get("target", "objects"))
+        tag = "".join(ch if ch.isalnum() else "_" for ch in raw_tag)[:24] or "t"
         for i, prim in enumerate(self._targets):
             mat_prim = rep.functional.create.material(
-                mdl="OmniPBR.mdl", bind_prims=[prim], name=f"sdg_mat_{i:03d}"
+                mdl="OmniPBR.mdl", bind_prims=[prim], name=f"sdg_mat_{tag}_{i:03d}"
             )
             shader = _find_shader(mat_prim, UsdShade)
+            if shader is None:
+                print(f"[sdg][materials] no MDL shader found for the material bound to "
+                      f"{prim.GetPath()} — it will not be randomized")
             self._shaders.append(shader)
 
     def apply(self, frame_idx: int) -> None:
         from pxr import Gf, Sdf, UsdShade
 
+        if not self._bound:
+            self._bind()
         rng = self.ctx.rng
         rough = _pair(self.cfg.get("roughness", [0.5, 0.5]))
         metal = _pair(self.cfg.get("metallic", [0.0, 0.0]))
@@ -104,12 +137,32 @@ class MaterialsRandomizer(Randomizer):
 
     # ------------------------------------------------------------------ helpers
     def _target_prims(self) -> List:
+        """Resolve `target` (a keyword or a list of them) + `prim_paths` to root prims.
+
+        Each returned prim gets ONE material bound to it with strongerThanDescendants, so a
+        root covers its whole subtree — that is why occluders/distractors are collected as
+        their spawned roots rather than as individual gprims.
+        """
         target = self.cfg.get("target", "objects")
+        wanted = {str(t).lower() for t in (target if isinstance(target, list) else [target])}
+        unknown = wanted - set(_TARGETS)
+        if unknown:
+            print(f"[sdg][materials] unknown target(s) {sorted(unknown)} — valid: {sorted(_TARGETS)}")
+        all_ = "all" in wanted
+        world = self.ctx.scene.world_path
         prims = []
-        if target in ("objects", "all"):
+        if all_ or "objects" in wanted:
             prims += [inst["prim"] for inst in self.ctx.scene.instances]
-        if target in ("ground", "all"):
-            prims += _ground_prims(self.ctx.scene.world_path)
+        if all_ or "ground" in wanted:
+            prims += _ground_prims(world)
+        # Occluders/distractors are spawned by their own randomizers under a known group xform;
+        # they carry no material of their own, so without this they stay default-white forever.
+        if all_ or "occluders" in wanted:
+            prims += _group_children(f"{world}/Occluders")
+        if all_ or "distractors" in wanted:
+            prims += _group_children("/World/Distractors")
+        for p in self.cfg.get("prim_paths", []) or []:
+            prims += _group_children(str(p), self_if_leaf=True)
         return prims
 
 
@@ -143,6 +196,24 @@ def _set_tex(shader, UsdShade, Sdf, name, path):
     if not inp:
         inp = shader.CreateInput(name, Sdf.ValueTypeNames.Asset)
     inp.Set(Sdf.AssetPath(path))
+
+
+def _group_children(path: str, self_if_leaf: bool = False) -> List:
+    """Direct children of a group xform (one spawned prim each), or [] if it does not exist.
+
+    Used for the /World/Occluders and /World/Distractors groups: each child is one spawned
+    occluder/distractor, and binding on that child covers its whole subtree.
+    """
+    import omni.usd
+
+    stage = omni.usd.get_context().get_stage()
+    root = stage.GetPrimAtPath(path)
+    if not root or not root.IsValid():
+        return []
+    kids = list(root.GetAllChildren())
+    if not kids and self_if_leaf:
+        return [root]
+    return kids
 
 
 def _ground_prims(world_path: str) -> List:

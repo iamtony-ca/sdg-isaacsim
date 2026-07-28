@@ -149,7 +149,7 @@ Isaac 을 import 하지 않는 순수 파이썬이다.
 |---|---|---|
 | `--obj-id` | (필수) | 목적지 `assets/obj/<obj_id>/` |
 | `--input-units` | `auto` | `auto\|mm\|cm\|m\|in`. auto = 변환된 stage 의 `metersPerUnit` 사용 |
-| `--up-axis` | `Z` | 결과 stage 의 up-axis 메타(**지오메트리를 회전하지는 않음**) |
+| `--up-axis` | `Z` | **소스 CAD** 의 up 축(`auto\|Z\|Y`). `Y` 면 **지오메트리를 +90°(X축) 회전**해 Z-up 으로 만든다 |
 | `--tess-lod` | `2` | B-rep 테셀레이션 밀도. 곡면이 각지면 3~4 로 (삼각형·용량 ↑) |
 | `--no-center` | — | bbox 중심정렬 하지 않음 |
 | `--load-materials` | — | 소스 재질을 살림(기본은 무시 — SDG 는 materials 랜덤화기가 칠한다) |
@@ -195,10 +195,27 @@ Isaac 을 import 하지 않는 순수 파이썬이다.
 `--tess-lod` 로 올릴 수 있다. 비용은 변환 시간뿐(STEP 수 분 vs STL 1분 내외, fresh clone 1회).
 → **B-rep 과 파생 STL 이 둘 다 있으면 B-rep 을 쓴다.**
 
+### up 축 — `--up-axis` 는 "소스가 무슨 축인지"를 말하는 것 (출력은 항상 Z-up)
+
+출력 `mesh.usd` 는 **항상 Z-up** 이다. USD 는 **참조된 레이어의 `upAxis` 메타를 합성하지 않기** 때문이다 —
+루트 stage(Isaac = Z-up)의 값만 쓰인다. 그래서 에셋에 `upAxis = Y` 를 찍어봐야 **아무도 읽지 않고**,
+Y-up 소스는 씬에서 **옆으로 누운 채** 들어온다. 유일하게 맞는 처리는 임포트 때 **회전을 구워 넣는 것**:
+
+| `--up-axis` | 하는 일 |
+|---|---|
+| `Z`(기본) | 회전 없음(소스가 이미 Z-up) |
+| `Y` | **+90° X축 회전을 transform 에 baked** → 소스 +Y 가 월드 +Z 가 된다 |
+| `auto` | 변환된 stage 의 `upAxis` 메타를 신뢰(모든 변환기가 의미 있게 채우지는 않으므로 가급적 명시) |
+
+실측(같은 STEP, HOOPS): `--up-axis Z` → `final size (m): [0.181, 0.1762, 0.1529]`,
+`--up-axis Y` → `[0.181, 0.1529, 0.1762]` (Y·Z 치수가 교환 = 회전이 실제로 들어감).
+참고로 이 STEP 은 HOOPS 가 `upAxis=Z` 로 찍어 나오며, 그 값은 항상 로그에 출력된다.
+
+`objects[].origin: bottom` 과 `rotation: yaw` 는 로컬 AABB 의 **Z-최소**를 "바닥"으로 보므로,
+Y-up CAD 를 받았으면 **반드시 `--up-axis Y` 로 임포트**해야 진짜 바닥면을 맞힌다.
+
 ### 그 밖의 주의
 
-- **좌표계**: 이 툴은 지오메트리를 회전하지 않는다(up-axis 메타만). `objects[].origin: bottom` 과
-  `rotation: yaw` 는 로컬 AABB 의 Z-최소를 "바닥"으로 보므로 **CAD 저작 축이 Z-up** 이어야 진짜 바닥을 맞힌다.
 - **실패 시 exit 2 + stderr**. (예전엔 fast-shutdown 의 `os._exit(0)` 탓에 실패해도 exit 0 이라 조용히
   빈 폴더만 남았다.)
 - **재현성**: `mesh.usd` 는 gitignore, CAD 소스는 git 추적. fresh clone 자동 재생성을 위해

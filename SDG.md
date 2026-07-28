@@ -129,7 +129,7 @@ writer:
 | # | `type` | 무엇을 랜덤화 | 주요 config 키 | 서브모드 / 비고 |
 |---|---|---|---|---|
 | 1 | **lighting** | dome 앰비언트 밝기 + blackbody 색온도 + overhead fixture(방향광·실제 그림자) + HDRI 환경맵 | `intensity`, `color_temperature`, `hdri`, `hdri_rotate`, `fixtures{kinds:[rect,distant],count,intensity,color_temperature,distance,elevation_deg,size}` | **HDRI 15종**(로컬 dir 오프라인/`isaac_skies` 온라인), fixture kinds **2**(rect·distant) |
-| 2 | **materials** | 대상 표면의 색·거칠기·금속성·텍스처 | `target`, `roughness`, `metallic`, `base_color`, `textures`, `texture_prob`, `texture_scale` | `target: objects\|ground\|all`. `base_color: hsv_jitter\|none`. UV 없는 mesh 는 project_uvw(평면엔 OK, 수직면 smear) |
+| 2 | **materials** | 대상 표면의 색·거칠기·금속성·텍스처 | `target`, `prim_paths`, `roughness`, `metallic`, `base_color`, `textures`, `texture_prob`, `texture_scale` | `target: objects\|ground\|occluders\|distractors\|all` (**리스트 가능**) + `prim_paths` 로 임의 루트. 안 칠해지는 게 있으면 **타깃 누락**이지 바인딩 강도 문제가 아니다(루트에 strongerThanDescendants 로 붙어 CAD 재질·GeomSubset·native instance 를 모두 이김 — 실측). `base_color: hsv_jitter\|none`. UV 없는 mesh 는 project_uvw(평면엔 OK, 수직면 smear) |
 | 3 | **background** | 환경 USD 씬 전환(warehouse/office/simple_room/hospital/grid…) | `pool`, `interval` | **9 프리셋**(grid×3·warehouse×3·simple_room·office·hospital). 로컬 경로=오프라인/프리셋명=온라인. pool 전부 pre-reference 후 interval 마다 하나만 visible |
 | 4 | **pose** | 객체 위치 + 회전 (+ origin-aware 배치) | `target`, `position{x,y,z}`, `rotation`, `yaw_deg` | `rotation: none\|yaw(=z_only)\|uniform_euler\|uniform_so3`. `objects[].origin: bottom` 과 짝이면 바닥 안착 |
 | 5 | **camera** | 시점 (look-at 반구/구면) | `mode: look_at`, `distance`, `elevation_deg`, `azimuth_deg` | obj centroid 를 바라보며 구면좌표 샘플. obj별 valid-view 제약은 로드맵(§CONSUMER §4-D) |
@@ -235,6 +235,31 @@ keypoints/pose 축을 그려 `<dataset>/qa/` 에 저장. Isaac 불필요(번들 
 **진행**: S1~S4 전부 구현·검증 완료. 프레임워크는 대량 생성 준비 상태 — 남은 것은 *생성/확장*
 (대량 생성, part-level·keypoints 정의, stereo pair 출력 등). 구현 이력은 `CHANGELOG.md`, 다음 작업은
 `CLAUDE.md` "현재 상태" 참조.
+
+### 5.1 백로그 — 고정 카메라 / eye-in-hand 카메라 (future work)
+
+**배경**: 현재 카메라 변동성은 `randomizers/camera.py`(객체 centroid 기준 반구 샘플링) 하나에서만 나온다.
+실제 배치가 **기구적으로 고정된 카메라**이거나 **로봇팔 EE 에 부착된 카메라(eye-in-hand)** 인 경우도
+동일 프레임워크로 커버되어야 한다.
+
+구조적 장벽은 없다 — GT 는 전부 그 프레임의 실제 카메라 행렬(`camera_params` 애노테이터)에서 계산되므로
+(`annotators/collector.py::_CamCtx`) **변동성이 카메라에서 오든 객체에서 오든 annotator/writer 는 동일**하다.
+`camera` randomizer 를 config 에서 빼면 카메라는 이미 전 프레임 고정된다. 남은 격차는 두 가지:
+
+1. **[소] 고정 카메라 포즈를 config 로** — 지금 고정 포즈는 `sensors/ideal.py::create()` 의 placeholder
+   (`position=(1.5,1.5,1.5), look_at=(0,0,0)`)에 하드코딩돼 있다. `SensorSpec` 에 `pose:
+   {position, look_at}`(또는 4×4 `T_world_cam`)를 받아 `create()` 가 쓰도록 하면 끝 — sensor 축 한 곳만 수정.
+   ※ `camera` randomizer 의 range 를 degenerate 하게 주는 우회는 **월드 고정이 아니다**: `_target()` 이
+   객체 centroid 기준이라 객체가 움직이면 카메라가 따라가 "객체 상대 고정"이 된다.
+2. **[중] eye-in-hand** — 프레임별 `T_world_cam` 을 외부(로봇 궤적 CSV / joint→FK 결과)에서 읽어
+   `rep.functional.modify.pose(cam, ...)` 로 세팅하는 randomizer plugin 1개 추가(기존 `camera.py` 구조 재사용,
+   샘플링 → 룩업). 또는 `create.camera(parent=...)`(현재 `"/World"` 하드코딩)를 config 로 열어 EE prim 에 부착.
+   품질 관점의 핵심은 구현이 아니라 **분포** — 반구 균일이 아니라 **로봇이 실제 도달 가능한 뷰포인트 분포**에서
+   샘플링해야 한다(§5 백로그의 *obj별 valid-view 제약 프로파일*과 같은 축).
+
+**주의**: 고정 카메라에서는 객체를 FOV 안에 두는 책임이 `pose.position` 범위로 넘어간다 — 현재 프레임워크에
+in-frame 자동 검증/reject 로직은 없으므로 범위를 FOV·작업영역에 맞춰 잡고 `bbox_2d`/`visib_fract` 로 확인한다.
+실카메라 모사가 목적이면 `sensors[].intrinsics` 를 mode 1(`{fx,fy,cx,cy}`) 실측값으로 박을 것.
 
 ---
 

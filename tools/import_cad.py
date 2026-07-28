@@ -24,6 +24,12 @@ translate(-bbox_centre) over the converted geometry.
 CAD, which records its authoring unit. Tessellated formats carry no unit, so pass the unit
 explicitly (`--input-units mm`) for those; auto warns when it has to fall back.
 
+`--up-axis` describes the SOURCE, and the geometry is rotated to match: the asset written here
+is ALWAYS Z-up (Isaac's stage convention), so `--up-axis Y` bakes a +90° rotation about X
+(source +Y -> +Z). This is required, not cosmetic — USD does not compose a referenced layer's
+upAxis metadata, so a Y-up asset dropped into the Z-up SDG stage would simply lie on its side,
+and the `origin: bottom` face keyword (which uses the local bbox Z-min) would pick a side face.
+
 Object identity stays generic: the asset lives under an obj_id folder and is named only in
 config — no object name is hardcoded (CLAUDE.md principle 2).
 
@@ -121,6 +127,23 @@ def _resolve_unit_factor(raw_usd: str, requested: str) -> float:
     return _UNIT_FACTOR["mm"]
 
 
+def _resolve_up_axis(raw_usd: str, requested: str) -> str:
+    """Up axis OF THE SOURCE geometry ('Z' or 'Y'). `auto` reads the converted stage's hint.
+
+    NOTE this describes the INPUT, not the output: the asset we write is always Z-up (Isaac's
+    stage convention), and a Y-up source gets a +90° X rotation baked in (see _build_asset).
+    """
+    from pxr import Usd, UsdGeom
+
+    stage_up = str(UsdGeom.GetStageUpAxis(Usd.Stage.Open(raw_usd)))
+    print(f"[import_cad] converted stage reports upAxis={stage_up}")
+    if requested.upper() in ("Z", "Y"):
+        return requested.upper()
+    up = "Y" if stage_up.upper().startswith("Y") else "Z"
+    print(f"[import_cad] --up-axis auto -> treating the source as {up}-up")
+    return up
+
+
 def _world_bbox(stage, prim):
     from pxr import Usd, UsdGeom
 
@@ -133,7 +156,15 @@ def _world_bbox(stage, prim):
     return center, extents
 
 
-def _build_asset(raw_usd: str, out_usd: str, unit_factor: float, up_axis: str, center: bool):
+def _build_asset(raw_usd: str, out_usd: str, unit_factor: float, src_up: str, center: bool):
+    """Wrap the converted geometry into the SDG asset convention: metres, origin-centred, Z-up.
+
+    The output is ALWAYS Z-up because that is Isaac's stage convention and a referenced layer's
+    own upAxis metadata is NOT composed into the referencing stage (USD only honours the ROOT
+    layer's upAxis). So stamping `upAxis = Y` on the asset would be a lie that nothing reads —
+    a Y-up source must instead be ROTATED into Z-up here, which is what src_up == "Y" does
+    (+90° about X: source +Y -> world +Z, source +Z -> world -Y).
+    """
     from pxr import Gf, Usd, UsdGeom
 
     raw = Usd.Stage.Open(raw_usd)
@@ -145,19 +176,20 @@ def _build_asset(raw_usd: str, out_usd: str, unit_factor: float, up_axis: str, c
     # Build an in-memory wrapper, then FLATTEN so mesh.usd is self-contained (no _raw.usd
     # dependency, so no absolute/relative reference-path portability issues).
     stage = Usd.Stage.CreateInMemory()
-    UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.z if up_axis.upper() == "Z" else UsdGeom.Tokens.y)
+    UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.z)
     UsdGeom.SetStageMetersPerUnit(stage, 1.0)
 
     obj = UsdGeom.Xform.Define(stage, "/obj")
     stage.SetDefaultPrim(obj.GetPrim())
-    # Single transform op (row-vector: P' = P * M): scale to metres about the bbox centre.
-    uf = unit_factor
-    M = Gf.Matrix4d(
-        uf, 0, 0, 0,
-        0, uf, 0, 0,
-        0, 0, uf, 0,
-        -uf * c[0], -uf * c[1], -uf * c[2], 1,
-    )
+    # Single transform op, row-vector convention (P' = P * M), composed left to right:
+    #   recentre on the bbox centre -> scale to metres -> rotate the source up-axis to Z.
+    uf = float(unit_factor)
+    T = Gf.Matrix4d(1.0).SetTranslate(Gf.Vec3d(-c[0], -c[1], -c[2]))
+    S = Gf.Matrix4d(1.0).SetScale(Gf.Vec3d(uf, uf, uf))
+    R = Gf.Matrix4d(1.0)
+    if src_up == "Y":
+        R = Gf.Matrix4d(1.0).SetRotate(Gf.Rotation(Gf.Vec3d(1, 0, 0), 90.0))
+    M = T * S * R
     obj.AddTransformOp().Set(M)
 
     geo = stage.DefinePrim("/obj/geo")
@@ -166,7 +198,10 @@ def _build_asset(raw_usd: str, out_usd: str, unit_factor: float, up_axis: str, c
 
     verify = Usd.Stage.Open(out_usd)
     fc, fext = _world_bbox(verify, verify.GetDefaultPrim())
-    return fext, [e * unit_factor for e in ext]
+    expected = [e * uf for e in ext]
+    if src_up == "Y":  # the rotation permutes the axes of the expected extents too
+        expected = [expected[0], expected[2], expected[1]]
+    return fext, expected
 
 
 def main() -> None:
@@ -177,7 +212,12 @@ def main() -> None:
                     help="scale of the source. 'auto' reads metersPerUnit off the converted stage "
                          "(correct for B-rep CAD, which records its authoring unit); tessellated "
                          "meshes carry none, so pass mm/cm/m/in for those.")
-    ap.add_argument("--up-axis", choices=["Z", "Y", "z", "y"], default="Z")
+    ap.add_argument("--up-axis", choices=["auto", "Z", "Y", "z", "y"], default="Z",
+                    help="up axis OF THE SOURCE CAD (not of the output). The asset written is "
+                         "always Z-up (Isaac's stage convention): a Y-up source is ROTATED "
+                         "+90° about X so its up axis becomes +Z. 'auto' trusts the converted "
+                         "stage's upAxis metadata, which not every converter fills in "
+                         "meaningfully — prefer stating it explicitly.")
     ap.add_argument("--tess-lod", type=int, default=2,
                     help="B-rep tessellation level of detail (HOOPS tessLOD, default 2). Higher = "
                          "finer triangles = heavier asset. Ignored for tessellated inputs.")
@@ -221,8 +261,12 @@ def main() -> None:
             raise SystemExit("[import_cad] conversion failed — no USD produced")
 
         unit_factor = _resolve_unit_factor(raw_usd, args.input_units)
+        src_up = _resolve_up_axis(raw_usd, args.up_axis)
+        if src_up == "Y":
+            print("[import_cad] source is Y-up -> baking a +90° X rotation so the asset is Z-up "
+                  "(Isaac stage convention; a referenced layer's own upAxis is ignored by USD)")
         final_ext, expected = _build_asset(
-            raw_usd, mesh_usd, unit_factor, args.up_axis, not args.no_center
+            raw_usd, mesh_usd, unit_factor, src_up, not args.no_center
         )
         if os.path.exists(raw_usd):
             os.remove(raw_usd)  # mesh.usd is flattened/self-contained

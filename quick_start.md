@@ -56,11 +56,20 @@ cd /isaac-sim/volume/sdg_ws
 
 `--tess-lod 2`(기본). 렌더에서 원통·필렛이 각져 보이면 `3`~`4` 로 올린다(삼각형↑ = 파일·렌더 비용↑).
 
-**④ 좌표계 확인**
+**④ 좌표계(up 축) 확인 — Y-up CAD 면 `--up-axis Y` 로 다시 임포트**
 
-`import_cad` 는 **지오메트리를 회전하지 않는다**(up-axis 메타만 기록). `objects[].origin: bottom` 과
-`rotation: yaw`(바닥 안착 + heading 다양성)는 로컬 AABB 의 Z-최소를 "바닥"으로 보므로, CAD 저작 축이
-**Z-up** 이어야 진짜 바닥을 맞힌다. 아니면 ⑥ 렌더에서 물체가 옆으로 누워 보인다.
+출력 `mesh.usd` 는 **항상 Z-up** 으로 만들어진다(USD 는 참조된 레이어의 `upAxis` 를 합성하지 않으므로
+에셋에 Y 를 찍어봐야 무시된다). `--up-axis` 는 **소스가 무슨 축인지**를 알려주는 값이고, `Y` 를 주면
+임포터가 **+90°(X축) 회전을 구워 넣어** Z-up 으로 세워준다.
+
+```bash
+/isaac-sim/python.sh tools/import_cad.py "assets/cad/<폴더>/part.stp" --obj-id obj_001 --up-axis Y
+# 로그의 치수가 Y·Z 교환돼 나오면 회전이 들어간 것:  [0.181, 0.1762, 0.1529] -> [0.181, 0.1529, 0.1762]
+```
+
+`objects[].origin: bottom` 과 `rotation: yaw`(바닥 안착 + heading 다양성)는 로컬 AABB 의 **Z-최소**를
+"바닥"으로 보므로, 여기서 축을 잘못 주면 ⑥ 렌더에서 물체가 **옆으로 눕고** 옆면이 바닥으로 잡힌다.
+(로그에 변환기가 찍은 `converted stage reports upAxis=…` 가 항상 출력된다 — 참고값이지 진실은 아니다.)
 
 **⑤ config 만들기 — 코드 수정은 없다(원칙3)**
 
@@ -91,6 +100,7 @@ python3 tools/visualize.py datasets/obj_001          # QA 오버레이 (Isaac �
 
 ```python
 {"obj_id": "obj_001", "cad": "assets/cad/<폴더>/part.stp", "units": "auto", "up_axis": "Z"},
+# up_axis 는 ④에서 확정한 "소스의 up 축" 을 그대로 적는다(Y-up CAD 면 "Y").
 ```
 
 **⑧ (선택) GT 채널 추가**

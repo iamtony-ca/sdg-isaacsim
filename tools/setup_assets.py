@@ -54,7 +54,11 @@ DEFAULT_ENVS = ["simple_room", "office"]
 # orientation either way: stl = 41400 pts / 13800 tris / 995 KB, stp = 14320 pts / 16881 tris /
 # 402 KB. "units": "auto" reads the unit the B-rep records (this STEP is authored in inches).
 #
-# Keys: obj_id, cad (repo-relative), units (auto|mm|cm|m|in), up_axis (Z|Y), and optionally
+# up_axis is the SOURCE CAD's up axis (auto|Z|Y) — a Y-up source gets a +90° X rotation baked
+# in so the asset is Z-up, because Isaac's stage is Z-up and USD ignores a referenced layer's
+# own upAxis. Get this wrong and the object lies on its side (and `origin: bottom` picks a side).
+#
+# Keys: obj_id, cad (repo-relative), units (auto|mm|cm|m|in), up_axis (auto|Z|Y), and optionally
 # tess_lod (B-rep tessellation density, default 2 — raise for smoother curved surfaces).
 OBJECT_IMPORTS = [
     {
